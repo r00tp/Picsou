@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Picsou — Gestion de patrimoine</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252a38;--gold:#c9a84c;--gold-light:#e8c97a;--gold-dim:rgba(201,168,76,.15);--red:#e05555;--green:#4caf7d;--text:#e8e6df;--text-dim:#7a7d8a;--text-muted:#3d4155;--immo:#6e8efb;--bourse:#4caf7d;--crypto:#f7931a;--epargne:#c9a84c;--dette:#e05555;--autre:#a855f7;--sp500:#38bdf8;--fd:'Cormorant Garamond',serif;--fm:'DM Mono',monospace;--fb:'DM Sans',sans-serif}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
+.sidebar-logo h1{font-family:var(--fd);font-size:22px;font-weight:300;color:var(--gold);letter-spacing:.04em;line-height:1.2}
+.sidebar-logo span{font-size:10px;color:var(--text-dim);letter-spacing:.15em;text-transform:uppercase;font-family:var(--fm);display:block;margin-top:2px}
+.sidebar-nav{padding:16px 0;flex:1;overflow-y:auto}
+.nav-section{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-muted);padding:12px 24px 6px;font-family:var(--fm)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 24px;cursor:pointer;color:var(--text-dim);transition:all .15s;font-size:13px;font-weight:300;border-left:2px solid transparent}
+.nav-item:hover{color:var(--text);background:var(--surface2)}.nav-item.active{color:var(--gold);border-left-color:var(--gold);background:var(--gold-dim)}
+.nav-item .ni{width:16px;text-align:center;font-size:14px}
+.nav-dot{width:6px;height:6px;border-radius:50%;margin-left:auto;flex-shrink:0}
+.sidebar-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:8px}
+.sidebar-footer button{flex:1;padding:7px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb);transition:all .15s}
+.sidebar-footer button:hover{border-color:var(--gold);color:var(--gold)}
+.main{margin-left:220px;flex:1;padding:32px 36px;max-width:calc(100vw - 220px)}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;gap:16px}
+.topbar-title{font-family:var(--fd);font-size:36px;font-weight:300;font-style:italic;color:var(--text);line-height:1}
+.topbar-date{font-size:11px;color:var(--text-dim);font-family:var(--fm);margin-top:6px}
+.topbar-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.btn{padding:9px 18px;border-radius:8px;font-size:12px;font-family:var(--fb);cursor:pointer;transition:all .15s;border:none;font-weight:500}
+.btn-gold{background:var(--gold);color:#0d0f14}.btn-gold:hover{background:var(--gold-light)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-dim)}.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.btn-sm{padding:6px 12px;font-size:11px}.btn-xs{padding:4px 9px;font-size:10px}
+.btn-icon{display:inline-flex;align-items:center;gap:5px}
+
+/* PRICE STATUS BAR */
+.price-bar{display:flex;align-items:center;gap:10px;font-size:11px;font-family:var(--fm)}
+.price-bar-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.price-bar-dot.ok{background:var(--green)}
+.price-bar-dot.loading{background:var(--gold);animation:pulse 1s infinite}
+.price-bar-dot.error{background:var(--red)}
+.price-bar-dot.idle{background:var(--text-muted)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.price-time{color:var(--text-dim)}
+.price-refresh{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;transition:all .15s;line-height:1}
+.price-refresh:hover{color:var(--gold);background:var(--gold-dim)}
+.price-refresh.spinning{animation:spin .8s linear infinite;color:var(--gold)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* PRICE CELL */
+.price-live{display:inline-flex;align-items:center;gap:4px}
+.price-live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0}
+.price-live-dot.stale{background:var(--text-muted)}
+.price-live-dot.err{background:var(--red)}
+.price-err-badge{font-size:10px;color:var(--red);font-family:var(--fm)}
+
+/* KPI */
+.kpi-row{display:grid;gap:14px;margin-bottom:20px}
+.kpi-5{grid-template-columns:2fr 1fr 1fr 1fr 1fr}
+.kpi-4{grid-template-columns:1fr 1fr 1fr 1fr}
+.kpi-3{grid-template-columns:1fr 1fr 1fr}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.2}
+.kpi-card.primary::before{opacity:.7}.kpi-card.primary{border-color:rgba(201,168,76,.2)}
+.kpi-label{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);font-family:var(--fm);margin-bottom:10px}
+.kpi-value{font-family:var(--fd);font-size:30px;font-weight:300;color:var(--text);line-height:1}
+.kpi-card.primary .kpi-value{font-size:40px;color:var(--gold)}
+.kpi-sub{font-size:11px;color:var(--text-dim);margin-top:7px;font-family:var(--fm)}
+.kpi-delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-family:var(--fm);padding:2px 7px;border-radius:4px;margin-top:8px}
+.kpi-delta.pos{color:var(--green);background:rgba(76,175,125,.12)}.kpi-delta.neg{color:var(--red);background:rgba(224,85,85,.12)}
+.kpi-accent{width:3px;height:100%;position:absolute;left:0;top:0;border-radius:12px 0 0 12px}
+/* PANEL */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.panel-header{padding:16px 22px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.panel-title{font-family:var(--fd);font-size:18px;font-weight:300;color:var(--text)}
+.panel-body{padding:20px 22px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+/* CHART */
+.chart-area{position:relative;width:100%}
+.chart-md{height:260px}.chart-lg{height:300px}
+/* PERIOD TABS */
+.period-tabs{display:flex;gap:2px;background:var(--surface2);border-radius:6px;padding:3px}
+.period-tab{padding:5px 12px;border-radius:4px;font-size:11px;cursor:pointer;border:none;background:none;color:var(--text-dim);font-family:var(--fm);transition:all .15s}
+.period-tab.active{background:var(--surface);color:var(--text)}
+/* SECTION TABS */
+.sec-tabs{display:flex;border-bottom:1px solid var(--border)}
+.sec-tab{padding:12px 22px;font-size:12px;cursor:pointer;border:none;background:none;color:var(--text-dim);font-family:var(--fb);transition:all .15s;border-bottom:2px solid transparent;margin-bottom:-1px}
+.sec-tab:hover{color:var(--text)}.sec-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid var(--border)}
+th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);font-family:var(--fm);font-weight:400;padding:0 10px 11px 0;text-align:left;white-space:nowrap}
+th:last-child{text-align:right;padding-right:0}.th-r{text-align:right!important}
+td{padding:12px 10px 12px 0;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+td:last-child{text-align:right;padding-right:0}.td-r{text-align:right;font-family:var(--fm)}
+tr:last-child td{border-bottom:none}
+tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
+.td-mono{font-family:var(--fm)}
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:12px;font-size:10px;font-family:var(--fm)}
+.badge-dot{width:4px;height:4px;border-radius:50%}
+.env-pill{display:inline-flex;padding:2px 8px;border-radius:4px;font-size:10px;font-family:var(--fm)}
+/* ALLOC */
+.alloc-legend{margin-top:14px}
+.alloc-item{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);gap:10px;cursor:pointer;transition:opacity .15s}
+.alloc-item:last-child{border-bottom:none}.alloc-item:hover{opacity:.8}
+.alloc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.alloc-name{flex:1;font-size:12px}.alloc-amount{font-family:var(--fm);font-size:12px}
+.alloc-pct{font-family:var(--fm);font-size:11px;color:var(--text-dim);width:38px;text-align:right}
+/* CHART LEGEND */
+.chart-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+.legend-item{display:flex;align-items:center;gap:7px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background .15s}
+.legend-item:hover{background:var(--surface2)}.legend-item.off{opacity:.4}
+.legend-line{width:18px;height:2px;border-radius:1px;flex-shrink:0}
+.legend-label{font-size:12px;color:var(--text-dim);font-family:var(--fm)}
+/* DETTE */
+.dette-card{background:var(--surface2);border-radius:10px;padding:16px 18px;margin-bottom:12px;border:1px solid var(--border);transition:border-color .15s}
+.dette-card:hover{border-color:var(--red)}
+.dette-progress{height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.dette-progress-fill{height:100%;background:var(--red);border-radius:2px}
+/* ACTION */
+.action-btn{background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:4px;color:var(--text-dim);font-size:13px;transition:all .1s}
+.action-btn:hover{background:var(--surface2);color:var(--text)}.action-btn.del:hover{color:var(--red)}
+/* CAT HEADER */
+.cat-header{display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap}
+.cat-icon-big{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.cat-title-big{font-family:var(--fd);font-size:28px;font-weight:300;font-style:italic}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:560px;max-width:92vw;max-height:90vh;overflow-y:auto;transform:translateY(12px);transition:transform .2s}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-header{padding:22px 28px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-title{font-family:var(--fd);font-size:22px;font-weight:300}
+.modal-close{background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:4px;line-height:1}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:20px 28px}
+.modal-footer{padding:14px 28px 22px;display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border)}
+.cat-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.cat-sel-btn{flex:1;min-width:76px;padding:8px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:12px;font-family:var(--fb);transition:all .15s;text-align:center;line-height:1.5}
+.cat-sel-btn:hover{border-color:var(--text-dim);color:var(--text)}
+.cat-sel-btn.active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+/* FORM */
+.fg{margin-bottom:15px}
+.fg label{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);font-family:var(--fm);margin-bottom:6px}
+.fg input,.fg select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--text);font-size:13px;font-family:var(--fb);outline:none;transition:border-color .15s}
+.fg input:focus,.fg select:focus{border-color:var(--gold)}
+.fg select option{background:var(--surface)}.fg input::placeholder{color:var(--text-muted)}
+.fg .hint{font-size:10px;color:var(--text-muted);font-family:var(--fm);margin-top:4px;line-height:1.4}
+.fg .hint a{color:var(--gold);text-decoration:none}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.fsec{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);font-family:var(--fm);margin:18px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+/* TICKER SEARCH */
+.ticker-result{font-size:11px;color:var(--green);font-family:var(--fm);margin-top:4px;min-height:16px}
+.ticker-result.err{color:var(--red)}
+/* EMPTY */
+.empty{text-align:center;padding:40px 24px;color:var(--text-muted)}
+.empty-icon{font-size:28px;margin-bottom:10px;opacity:.4}.empty-text{font-size:13px;line-height:1.6}
+/* HISTORY */
+.history-item{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
+.history-item:last-child{border-bottom:none}
+.history-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.history-info{flex:1;min-width:0}
+.history-name{font-size:13px}.history-date{font-size:11px;color:var(--text-dim);font-family:var(--fm);margin-top:2px}
+.section{display:none}.section.active{display:block}
+.notif{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 18px;font-size:13px;color:var(--text);z-index:300;transform:translateY(80px);opacity:0;transition:all .3s;max-width:320px}
+.notif.show{transform:translateY(0);opacity:1}.notif.success{border-color:var(--green)}.notif.warn{border-color:var(--gold)}
+.sp-badge{display:inline-flex;align-items:center;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.25);color:var(--sp500);padding:3px 9px;border-radius:16px;font-size:10px;font-family:var(--fm)}
+.compare-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.perf-callout{background:var(--surface2);border-radius:10px;padding:15px;flex:1;min-width:130px;border:1px solid var(--border)}
+.perf-callout-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);font-family:var(--fm);margin-bottom:6px}
+.perf-callout-value{font-family:var(--fd);font-size:26px;font-weight:300}
+.perf-callout-sub{font-size:11px;font-family:var(--fm);color:var(--text-dim);margin-top:3px}
+.pct-bar-wrap{display:flex;align-items:center;gap:8px}
+.pct-bar-track{height:3px;background:var(--border);border-radius:2px}
+.pct-bar-fill{height:100%;border-radius:2px}
+.spark-pos{display:inline-block;padding:2px 6px;border-radius:4px;font-family:var(--fm);font-size:11px;background:rgba(76,175,125,.1);color:var(--green)}
+.spark-neg{display:inline-block;padding:2px 6px;border-radius:4px;font-family:var(--fm);font-size:11px;background:rgba(224,85,85,.1);color:var(--red)}
+.ml-auto{margin-left:auto}
+
+/* API INFO BOX */
+.info-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:11px;color:var(--text-dim);line-height:1.6;font-family:var(--fm)}
+.info-box strong{color:var(--text)}
+
+/* PRICE ERRORS PANEL */
+.err-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.err-item{display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--fm);color:var(--text-dim)}
+.err-item::before{content:'⚠';color:var(--red);font-size:12px}
+
+/* LAST UPDATE chip */
+.update-chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:10px;font-family:var(--fm);color:var(--text-dim)}
+.update-chip.fresh{border-color:rgba(76,175,125,.3);color:var(--green)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="sidebar">
+  <div class="sidebar-logo"><h1>Picsou</h1><span>Gestion de patrimoine</span></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">Vue d'ensemble</div>
+    <div class="nav-item active" data-sec="dashboard" onclick="showSection('dashboard',this)"><span class="ni">◈</span> Tableau de bord</div>
+    <div class="nav-section">Actifs</div>
+    <div class="nav-item" data-sec="immo" onclick="showSection('immo',this)"><span class="ni">🏠</span> Immobilier<span class="nav-dot" style="background:var(--immo)"></span></div>
+    <div class="nav-item" data-sec="bourse" onclick="showSection('bourse',this)"><span class="ni">📈</span> Bourse<span class="nav-dot" style="background:var(--bourse)"></span></div>
+    <div class="nav-item" data-sec="crypto" onclick="showSection('crypto',this)"><span class="ni">₿</span> Crypto<span class="nav-dot" style="background:var(--crypto)"></span></div>
+    <div class="nav-item" data-sec="epargne" onclick="showSection('epargne',this)"><span class="ni">🏦</span> Épargne<span class="nav-dot" style="background:var(--epargne)"></span></div>
+    <div class="nav-item" data-sec="autre" onclick="showSection('autre',this)"><span class="ni">✦</span> Autres actifs<span class="nav-dot" style="background:var(--autre)"></span></div>
+    <div class="nav-section">Passif</div>
+    <div class="nav-item" data-sec="dettes" onclick="showSection('dettes',this)"><span class="ni">⚠</span> Dettes & crédits<span class="nav-dot" style="background:var(--dette)"></span></div>
+    <div class="nav-section">Outils</div>
+    <div class="nav-item" data-sec="historique" onclick="showSection('historique',this)"><span class="ni">⊡</span> Historique</div>
+  </nav>
+  <div class="sidebar-footer">
+    <button onclick="exportData()">⬇ Export</button>
+    <button onclick="document.getElementById('importFile').click()">⬆ Import</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+  <div style="padding:10px 24px 16px;font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.0</div>
+</aside>
+
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div id="section-dashboard" class="section active">
+    <div class="topbar">
+      <div><div class="topbar-title">Vue d'ensemble</div><div class="topbar-date" id="today-date"></div></div>
+      <div class="topbar-right">
+        <button class="btn btn-gold" onclick="openAddAsset()">+ Nouvel actif</button>
+        <div class="price-bar" id="global-price-bar">
+          <div class="price-bar-dot idle" id="pb-dot"></div>
+          <span id="pb-text" style="color:var(--text-dim)">Cours non chargés</span>
+          <button class="price-refresh" id="pb-btn" onclick="refreshAllPrices()" title="Rafraîchir les cours">↻</button>
+        </div>
+      </div>
+    </div>
+    <div class="kpi-row kpi-5">
+      <div class="kpi-card primary"><div class="kpi-label">Patrimoine net total</div><div class="kpi-value" id="kpi-total">0 €</div><div class="kpi-sub" id="kpi-brut"></div></div>
+      <div class="kpi-card"><div class="kpi-accent" style="background:var(--immo)"></div><div class="kpi-label">Immobilier</div><div class="kpi-value" id="kpi-immo" style="font-size:22px">0 €</div><div class="kpi-delta" id="kpi-immo-d" style="display:none"></div></div>
+      <div class="kpi-card"><div class="kpi-accent" style="background:var(--bourse)"></div><div class="kpi-label">Bourse</div><div class="kpi-value" id="kpi-bourse" style="font-size:22px">0 €</div><div class="kpi-delta" id="kpi-bourse-d" style="display:none"></div></div>
+      <div class="kpi-card"><div class="kpi-accent" style="background:var(--crypto)"></div><div class="kpi-label">Crypto</div><div class="kpi-value" id="kpi-crypto" style="font-size:22px">0 €</div><div class="kpi-delta" id="kpi-crypto-d" style="display:none"></div></div>
+      <div class="kpi-card"><div class="kpi-accent" style="background:var(--epargne)"></div><div class="kpi-label">Épargne</div><div class="kpi-value" id="kpi-epargne" style="font-size:22px">0 €</div><div class="kpi-delta" id="kpi-epargne-d" style="display:none"></div></div>
+    </div>
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="panel" style="margin-bottom:0">
+        <div class="panel-header"><span class="panel-title">Évolution</span>
+          <div class="period-tabs" id="evo-tabs">
+            <button class="period-tab" onclick="setEvoPeriod('3M',this)">3M</button>
+            <button class="period-tab" onclick="setEvoPeriod('6M',this)">6M</button>
+            <button class="period-tab" onclick="setEvoPeriod('1Y',this)">1A</button>
+            <button class="period-tab active" onclick="setEvoPeriod('ALL',this)">Tout</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div id="evo-no-data" class="empty" style="display:none;padding:24px 0"><div class="empty-icon">📈</div><div class="empty-text">Graphique disponible à partir du 2ème jour d'utilisation.</div></div>
+          <div class="chart-area chart-md" id="evo-wrap"><canvas id="evo-chart"></canvas></div>
+          <div class="chart-legend" id="evo-legend"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-bottom:0">
+        <div class="panel-header"><span class="panel-title">Répartition</span></div>
+        <div class="panel-body">
+          <div style="position:relative;height:175px;display:flex;align-items:center;justify-content:center"><canvas id="donut-chart"></canvas></div>
+          <div class="alloc-legend" id="alloc-legend"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="panel-title">Performance relative</span><span class="sp-badge">vs S&amp;P 500</span></div>
+        <div class="period-tabs" id="perf-tabs">
+          <button class="period-tab" onclick="setPerfPeriod('1M',this)">1M</button>
+          <button class="period-tab" onclick="setPerfPeriod('3M',this)">3M</button>
+          <button class="period-tab" onclick="setPerfPeriod('6M',this)">6M</button>
+          <button class="period-tab" onclick="setPerfPeriod('1Y',this)">1A</button>
+          <button class="period-tab active" onclick="setPerfPeriod('ALL',this)">Tout</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="compare-row" id="perf-callouts"></div>
+        <div id="perf-no-data" class="empty" style="display:none;padding:14px 0"><div class="empty-icon">📊</div><div class="empty-text">Enregistrez au moins 2 jours de données pour voir la comparaison.</div></div>
+        <div class="chart-area chart-lg" id="perf-wrap"><canvas id="perf-chart"></canvas></div>
+        <div class="chart-legend" style="margin-top:12px">
+          <div class="legend-item"><div class="legend-line" style="background:var(--gold)"></div><span class="legend-label">Mon patrimoine (base 100)</span></div>
+          <div class="legend-item"><div class="legend-line" style="background:var(--sp500);opacity:.7"></div><span class="legend-label">S&amp;P 500 (base 100)</span></div>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--text-muted);font-family:var(--fm)">∗ Données S&amp;P 500 approx. après août 2025.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Tous les actifs</span><button class="btn btn-outline btn-sm" onclick="openAddAsset()">+ Ajouter</button></div>
+      <div class="panel-body">
+        <div class="table-wrap">
+          <table><thead><tr><th>Actif</th><th>Catégorie</th><th class="th-r">Valeur</th><th class="th-r">Investi</th><th class="th-r">+/- value</th><th class="th-r">Cours</th><th></th></tr></thead>
+          <tbody id="all-assets-table"></tbody></table>
+          <div id="all-assets-empty" class="empty" style="display:none"><div class="empty-icon">◈</div><div class="empty-text">Aucun actif enregistré.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMMO -->
+  <div id="section-immo" class="section"></div>
+
+  <!-- BOURSE -->
+  <div id="section-bourse" class="section">
+    <div class="cat-header">
+      <div class="cat-icon-big" style="background:rgba(76,175,125,.15)">📈</div>
+      <div><div class="cat-title-big" style="color:var(--bourse)">Bourse</div><div class="topbar-date">Actions, ETF, Obligations</div></div>
+      <div class="ml-auto" style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <button class="btn btn-gold" onclick="openAddAsset('bourse')">+ Ajouter</button>
+        <div class="price-bar" id="bourse-price-bar">
+          <div class="price-bar-dot idle" id="bourse-pb-dot"></div>
+          <span id="bourse-pb-text" style="color:var(--text-dim);font-size:11px;font-family:var(--fm)">—</span>
+          <button class="price-refresh" id="bourse-pb-btn" onclick="refreshAllPrices()" title="Rafraîchir">↻</button>
+        </div>
+      </div>
+    </div>
+    <div id="bourse-kpi" class="kpi-row kpi-4" style="margin-bottom:20px"></div>
+    <div class="panel" style="margin-bottom:0">
+      <div class="sec-tabs">
+        <button class="sec-tab active" onclick="switchSecTab('bourse','consolide',this)">Vue consolidée</button>
+        <button class="sec-tab" onclick="switchSecTab('bourse','lots',this)">Positions détaillées</button>
+      </div>
+      <div id="bourse-tab-consolide" class="panel-body"></div>
+      <div id="bourse-tab-lots" class="panel-body" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- CRYPTO -->
+  <div id="section-crypto" class="section">
+    <div class="cat-header">
+      <div class="cat-icon-big" style="background:rgba(247,147,26,.15)">₿</div>
+      <div><div class="cat-title-big" style="color:var(--crypto)">Crypto</div><div class="topbar-date">Actifs numériques & DeFi</div></div>
+      <div class="ml-auto" style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <button class="btn btn-gold" onclick="openAddAsset('crypto')">+ Ajouter</button>
+        <div class="price-bar" id="crypto-price-bar">
+          <div class="price-bar-dot idle" id="crypto-pb-dot"></div>
+          <span id="crypto-pb-text" style="color:var(--text-dim);font-size:11px;font-family:var(--fm)">—</span>
+          <button class="price-refresh" id="crypto-pb-btn" onclick="refreshAllPrices()" title="Rafraîchir">↻</button>
+        </div>
+      </div>
+    </div>
+    <div id="crypto-kpi" class="kpi-row kpi-4" style="margin-bottom:20px"></div>
+    <div class="panel" style="margin-bottom:0">
+      <div class="sec-tabs">
+        <button class="sec-tab active" onclick="switchSecTab('crypto','consolide',this)">Vue consolidée</button>
+        <button class="sec-tab" onclick="switchSecTab('crypto','lots',this)">Positions détaillées</button>
+      </div>
+      <div id="crypto-tab-consolide" class="panel-body"></div>
+      <div id="crypto-tab-lots" class="panel-body" style="display:none"></div>
+    </div>
+  </div>
+
+  <div id="section-epargne" class="section"></div>
+  <div id="section-autre" class="section"></div>
+
+  <!-- DETTES -->
+  <div id="section-dettes" class="section">
+    <div class="cat-header">
+      <div class="cat-icon-big" style="background:rgba(224,85,85,.15)">⚠</div>
+      <div><div class="cat-title-big" style="color:var(--dette)">Dettes & crédits</div><div class="topbar-date">Emprunts et crédits</div></div>
+      <button class="btn btn-gold ml-auto" onclick="openAddDette()">+ Ajouter</button>
+    </div>
+    <div id="dette-kpi" class="kpi-row kpi-3" style="margin-bottom:24px"></div>
+    <div id="dette-list"></div>
+    <div id="dette-empty" class="empty" style="display:none"><div class="empty-icon">✓</div><div class="empty-text">Aucune dette.</div></div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div id="section-historique" class="section">
+    <div class="topbar"><div><div class="topbar-title">Historique</div><div class="topbar-date">Journal des opérations</div></div></div>
+    <div class="panel"><div class="panel-header"><span class="panel-title">Opérations</span></div><div class="panel-body" id="history-list"></div></div>
+  </div>
+
+</main>
+</div>
+
+<!-- MODAL ACTIF -->
+<div class="modal-overlay" id="modal-asset">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="modal-asset-title">Nouvel actif</span><button class="modal-close" onclick="closeModal('asset')">✕</button></div>
+    <div class="modal-body" id="modal-asset-body"></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('asset')">Annuler</button><button class="btn btn-gold" onclick="saveAsset()">Enregistrer</button></div>
+  </div>
+</div>
+
+<!-- MODAL DETTE -->
+<div class="modal-overlay" id="modal-dette">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="modal-dette-title">Nouvelle dette</span><button class="modal-close" onclick="closeModal('dette')">✕</button></div>
+    <div class="modal-body">
+      <div class="fg"><label>Nom / Établissement</label><input type="text" id="dn" placeholder="Crédit immobilier BNP…"></div>
+      <div class="fg"><label>Type</label><select id="dt"><option value="immo">Crédit immobilier</option><option value="conso">Crédit consommation</option><option value="auto">LOA / Crédit auto</option><option value="etudiant">Prêt étudiant</option><option value="pro">Crédit professionnel</option><option value="autre">Autre</option></select></div>
+      <div class="fr2"><div class="fg"><label>Capital restant dû (€)</label><input type="number" id="dr" placeholder="0" step="0.01"></div><div class="fg"><label>Montant initial (€)</label><input type="number" id="di" placeholder="0" step="0.01"></div></div>
+      <div class="fr2"><div class="fg"><label>Taux (%)</label><input type="number" id="drate" placeholder="3.5" step="0.01"></div><div class="fg"><label>Mensualité (€)</label><input type="number" id="dm" placeholder="0" step="0.01"></div></div>
+      <div class="fg"><label>Date de fin</label><input type="date" id="de"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('dette')">Annuler</button><button class="btn btn-gold" onclick="saveDette()">Enregistrer</button></div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+// S&P 500 MONTHLY DATA
+// ════════════════════════════════════════════════════
+const SP500={'2020-01':3225,'2020-02':2954,'2020-03':2585,'2020-04':2912,'2020-05':3044,'2020-06':3100,'2020-07':3271,'2020-08':3500,'2020-09':3363,'2020-10':3269,'2020-11':3621,'2020-12':3756,'2021-01':3714,'2021-02':3811,'2021-03':3972,'2021-04':4181,'2021-05':4204,'2021-06':4297,'2021-07':4395,'2021-08':4523,'2021-09':4307,'2021-10':4605,'2021-11':4567,'2021-12':4766,'2022-01':4515,'2022-02':4373,'2022-03':4530,'2022-04':4131,'2022-05':4132,'2022-06':3785,'2022-07':4130,'2022-08':4109,'2022-09':3586,'2022-10':3901,'2022-11':4080,'2022-12':3839,'2023-01':4076,'2023-02':3970,'2023-03':4109,'2023-04':4169,'2023-05':4179,'2023-06':4450,'2023-07':4588,'2023-08':4507,'2023-09':4288,'2023-10':4193,'2023-11':4567,'2023-12':4769,'2024-01':4845,'2024-02':5137,'2024-03':5254,'2024-04':5035,'2024-05':5277,'2024-06':5460,'2024-07':5522,'2024-08':5648,'2024-09':5762,'2024-10':5705,'2024-11':6032,'2024-12':5881,'2025-01':5996,'2025-02':5954,'2025-03':5611,'2025-04':5205,'2025-05':5350,'2025-06':5480,'2025-07':5620,'2025-08':5700,'2025-09':5780,'2025-10':5830,'2025-11':5920,'2025-12':5990,'2026-01':5950,'2026-02':5870,'2026-03':5820};
+function getSP500(d){const ym=d.slice(0,7);if(SP500[ym])return SP500[ym];const k=Object.keys(SP500).sort();let l=null;for(const x of k)if(x<=ym)l=SP500[x];return l;}
+
+// ════════════════════════════════════════════════════
+// COINGECKO ID MAP  (symbole → id coingecko)
+// ════════════════════════════════════════════════════
+const CG_MAP={
+  BTC:'bitcoin',ETH:'ethereum',SOL:'solana',BNB:'binancecoin',XRP:'ripple',
+  ADA:'cardano',DOGE:'dogecoin',DOT:'polkadot',AVAX:'avalanche-2',MATIC:'matic-network',
+  LINK:'chainlink',LTC:'litecoin',UNI:'uniswap',ATOM:'cosmos',ALGO:'algorand',
+  VET:'vechain',FIL:'filecoin',AAVE:'aave',NEAR:'near',OP:'optimism',
+  ARB:'arbitrum',SUI:'sui',APT:'aptos',INJ:'injective-protocol',TIA:'celestia',
+  TON:'the-open-network',PEPE:'pepe',WLD:'worldcoin-wld',STX:'blockstack',
+  RNDR:'render-token',FET:'fetch-ai',GRT:'the-graph',IMX:'immutable-x',
+  SAND:'the-sandbox',MANA:'decentraland',CRO:'crypto-com-chain',FTT:'ftx-token',
+  USDT:'tether',USDC:'usd-coin',DAI:'dai',BUSD:'binance-usd',
+  MKR:'maker',COMP:'compound-governance-token',YFI:'yearn-finance',
+  SUSHI:'sushi',CAKE:'pancakeswap-token',CRV:'curve-dao-token',
+  LDO:'lido-dao',RPL:'rocket-pool',RETH:'rocket-pool-eth',
+  WBTC:'wrapped-bitcoin',STETH:'staked-ether',CBETH:'coinbase-wrapped-staked-eth',
+  SEI:'sei-network',PYTH:'pyth-network',JTO:'jito-governance-token',
+  BONK:'bonk',JUP:'jupiter-exchange-solana',STRK:'starknet',
+  ENA:'ethena',ETHFI:'ether-fi',W:'wormhole',ONDO:'ondo-finance',
+  XLM:'stellar',HBAR:'hedera-hashgraph',ICP:'internet-computer',
+  EGLD:'elrond-erd-2',THETA:'theta-token',EOS:'eos',XTZ:'tezos',
+  ZEC:'zcash',DASH:'dash',DCR:'decred',ZIL:'zilliqa',
+  CHZ:'chiliz',HOT:'holotoken',BAT:'basic-attention-token',ENJ:'enjincoin',
+  FLOW:'flow',MINA:'mina-protocol',KAVA:'kava',ROSE:'oasis-network',
+  ONE:'harmony',CELO:'celo',GALA:'gala',AXS:'axie-infinity',
+  LUNC:'terra-luna',LUNA:'terra-luna-2',OSMO:'osmosis',JUNO:'juno-network'
+};
+
+// ════════════════════════════════════════════════════
+// LIVE PRICES  (mémoire uniquement, non persisté)
+// ════════════════════════════════════════════════════
+let livePrices = {};        // { 'bitcoin': 42000 (USD), 'AAPL': 178.5, ... }
+let priceErrors = {};       // { 'BADTICKER': 'Not found' }
+let priceLastUpdated = null;
+let priceLoading = false;
+let fxRate = 1.08;          // EUR/USD: 1 EUR = fxRate USD (fetched live, fallback 1.08)
+
+async function fetchEurUsd(){
+  const urls=[
+    'https://open.er-api.com/v6/latest/EUR',
+    'https://api.allorigins.win/raw?url='+encodeURIComponent('https://api.frankfurter.app/latest?from=EUR&to=USD'),
+    'https://corsproxy.io/?url='+encodeURIComponent('https://open.er-api.com/v6/latest/EUR'),
+  ];
+  for(const url of urls){
+    try{
+      const r=await fetch(url,{signal:AbortSignal.timeout(6000)});
+      if(!r.ok)throw 0;
+      const j=await r.json();
+      const rate=j?.rates?.USD??j?.USD;
+      if(rate&&rate>0){fxRate=rate;return;}
+    }catch(e){}
+  }
+}
+function usdToEur(usd){return usd/fxRate;}
+function eurToUsd(eur){return eur*fxRate;}
+
+// ════════════════════════════════════════════════════
+// DATA STORE
+// ════════════════════════════════════════════════════
+const STORE='patrimoine_v5';
+let data={assets:[],dettes:[],history:[],snapshots:[]};
+function loadData(){const r=localStorage.getItem(STORE);if(r)try{data={...data,...JSON.parse(r)};}catch(e){}if(!data.snapshots)data.snapshots=[];}
+function save(){localStorage.setItem(STORE,JSON.stringify(data));}
+
+const CATS={immo:{label:'Immobilier',icon:'🏠',color:'#6e8efb'},bourse:{label:'Bourse',icon:'📈',color:'#4caf7d'},crypto:{label:'Crypto',icon:'₿',color:'#f7931a'},epargne:{label:'Épargne',icon:'🏦',color:'#c9a84c'},autre:{label:'Autre',icon:'✦',color:'#a855f7'}};
+const ENV_LABELS={pea:'PEA',cto:'CTO',av:'Assur.-vie',per:'PER'};
+const ENV_COLORS={pea:'rgba(110,142,251,.15)',cto:'rgba(76,175,125,.15)',av:'rgba(201,168,76,.15)',per:'rgba(168,85,247,.15)'};
+const ENV_TEXT={pea:'#6e8efb',cto:'#4caf7d',av:'#c9a84c',per:'#a855f7'};
+
+function fmt(n){if(n==null||isNaN(n))return'—';return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);}
+function fmtDec(n,d=2){if(n==null||isNaN(n))return'—';return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:d,maximumFractionDigits:d}).format(n);}
+function fmtUsd(n){if(n==null||isNaN(n))return'—';if(n>=1000)return'$'+new Intl.NumberFormat('fr-FR',{maximumFractionDigits:2}).format(n);if(n>=1)return'$'+n.toFixed(2);return'$'+n.toFixed(6).replace(/\.?0+$/,'');}
+function fmtLivePrice(a,price){
+  if(a.cat==='crypto')return fmtUsd(price);
+  const ccy=a.ticker?livePrices[a.ticker.toUpperCase()+'__ccy']:null;
+  if(ccy==='USD')return'$'+price.toFixed(2);
+  if(ccy==='GBP')return'£'+price.toFixed(2);
+  if(ccy==='GBX')return(price/100).toFixed(2)+' £'; // pence to pounds
+  return fmtDec(price);
+}
+function fmtQ(n){if(!n&&n!==0)return'—';const s=parseFloat(n);return s===Math.floor(s)?s.toLocaleString('fr-FR'):parseFloat(s.toFixed(8)).toLocaleString('fr-FR',{maximumFractionDigits:8});}
+// Format an amount in a transaction currency (EUR or USD)
+function fmtTxAmount(amount,ccy){
+  if(amount==null||isNaN(amount))return'—';
+  if(ccy==='USD'){
+    if(Math.abs(amount)>=1000)return'$'+amount.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(Math.abs(amount)>=1)return'$'+amount.toFixed(2);
+    return'$'+amount.toFixed(6).replace(/\.?0+$/,'');
+  }
+  return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2}).format(amount);
+}
+function ccySymbol(ccy){return ccy==='USD'?'$':'€';}
+function fmtPct(n,d=1){if(n==null||isNaN(n))return'—';return(n>=0?'+':'')+n.toFixed(d)+'%';}
+function pv(v){return parseFloat(v)||0;}
+function gv(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function gn(id){return pv(gv(id));}
+
+// ════════════════════════════════════════════════════
+// PRICE ENGINE
+// ════════════════════════════════════════════════════
+function getLivePrice(a){
+  if(a.cat==='crypto'){
+    const id=a.cgId||(a.ticker?CG_MAP[a.ticker.toUpperCase()]:null);
+    if(id&&livePrices[id]!=null)return livePrices[id];
+  }
+  if(a.cat==='bourse'){
+    const t=a.ticker?.toUpperCase();
+    if(t&&livePrices[t]!=null)return livePrices[t];
+  }
+  return null;
+}
+
+function assetValue(a){
+  const live=getLivePrice(a);
+  if(live!=null&&a.quantity>0){
+    // Crypto live prices are in USD — convert to EUR
+    return a.cat==='crypto'? usdToEur(a.quantity*live) : a.quantity*live;
+  }
+  // Fallback: stored value (already in EUR)
+  if(a.quantity>0&&a.currentPrice>0){
+    return a.cat==='crypto'? usdToEur(a.quantity*a.currentPrice) : a.quantity*a.currentPrice;
+  }
+  return a.value||0;
+}
+function assetInvested(a){
+  if(a.quantity!=null&&a.pru!=null){
+    const rawInvested=a.quantity*a.pru+(a.fees||0);
+    // If transaction was in USD, convert to EUR
+    return a.txCurrency==='USD'? usdToEur(rawInvested) : rawInvested;
+  }
+  return a.invested||0;
+}
+// Return PRU in lot's transaction currency (for display in lots table)
+function lotPruInTxCcy(a){return a.pru||0;}
+// Return fees in lot's transaction currency
+function lotFeesInTxCcy(a){return a.fees||0;}
+// Return current crypto price in lot's transaction currency
+function lotCurrentPriceInTxCcy(a){
+  const live=getLivePrice(a);
+  const priceUsd=live??a.currentPrice??0;
+  return a.txCurrency==='USD'? priceUsd : usdToEur(priceUsd);
+}
+// Return lot value in its transaction currency
+function lotValueInTxCcy(a){
+  return (a.quantity||0)*lotCurrentPriceInTxCcy(a);
+}
+// Return lot P&L in its transaction currency
+function lotPlInTxCcy(a){
+  const inv=(a.quantity||0)*(a.pru||0)+(a.fees||0);
+  return lotValueInTxCcy(a)-inv;
+}
+function assetCurrentPrice(a){
+  const live=getLivePrice(a);
+  return live??a.currentPrice??0;
+}
+function hasPriceError(a){
+  if(a.cat==='bourse'&&a.ticker)return!!priceErrors[a.ticker.toUpperCase()];
+  if(a.cat==='crypto'){const id=a.cgId||(a.ticker?CG_MAP[a.ticker.toUpperCase()]:null);return id?!!priceErrors[id]:false;}
+  return false;
+}
+
+// CoinGecko
+async function fetchCoinGeckoPrices(ids){
+  if(!ids.length)return;
+  const idsStr=ids.join(',');
+  // Attempt 1 — CoinGecko direct (free, no key needed, may be blocked by CORS in some envs)
+  const cgUrl=`https://api.coingecko.com/api/v3/simple/price?ids=${idsStr}&vs_currencies=usd&precision=8`;
+  // Attempt 2 — CoinGecko via allorigins proxy
+  const cgProxy=`https://api.allorigins.win/raw?url=${encodeURIComponent(cgUrl)}`;
+  // Attempt 3 — CoinCap API (IDs are largely identical to CoinGecko)
+  const ccUrl=`https://api.coincap.io/v2/assets?ids=${idsStr}&limit=50`;
+  // Attempt 4 — corsproxy.io on CoinGecko
+  const cgProxy2=`https://corsproxy.io/?url=${encodeURIComponent(cgUrl)}`;
+
+  function parseCoinGecko(json){
+    let anyOk=false;
+    for(const id of ids){
+      if(json[id]?.usd!=null){livePrices[id]=json[id].usd;delete priceErrors[id];anyOk=true;}
+    }
+    return anyOk;
+  }
+  function parseCoinCap(json){
+    // CoinCap returns { data: [{id, priceUsd}] }
+    let anyOk=false;
+    for(const item of (json.data||[])){
+      if(ids.includes(item.id)&&item.priceUsd!=null){
+        livePrices[item.id]=parseFloat(item.priceUsd);
+        delete priceErrors[item.id];
+        anyOk=true;
+      }
+    }
+    return anyOk;
+  }
+
+  const attempts=[
+    async()=>{const r=await fetch(cgUrl,{signal:AbortSignal.timeout(8000)});if(!r.ok)throw 0;return parseCoinGecko(await r.json());},
+    async()=>{const r=await fetch(cgProxy,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return parseCoinGecko(await r.json());},
+    async()=>{const r=await fetch(cgProxy2,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return parseCoinGecko(await r.json());},
+    async()=>{const r=await fetch(ccUrl,{signal:AbortSignal.timeout(10000)});if(!r.ok)throw 0;return parseCoinCap(await r.json());},
+  ];
+
+  for(const attempt of attempts){
+    try{
+      const ok=await attempt();
+      if(ok){
+        // Mark any remaining unfound IDs as error
+        for(const id of ids){if(livePrices[id]==null)priceErrors[id]='ID non reconnu par CoinGecko';}
+        return;
+      }
+    }catch(e){/* try next */}
+  }
+  // All attempts failed
+  for(const id of ids)if(livePrices[id]==null)priceErrors[id]='Erreur réseau (CoinGecko/CoinCap)';
+}
+
+// Yahoo Finance — chaîne de 4 endpoints/proxies pour contourner CORS
+async function fetchYahooPrice(ticker){
+  const t=ticker.toUpperCase();
+  const baseUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+  const baseUrl2=`https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
+  const quoteUrl=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(ticker)}`;
+
+  function extractChart(json){
+    const meta=json?.chart?.result?.[0]?.meta;
+    if(meta?.regularMarketPrice==null)return null;
+    return{price:meta.regularMarketPrice,currency:(meta.currency||'USD').toUpperCase()};
+  }
+  function extractQuote(json){
+    const q=json?.quoteResponse?.result?.[0];
+    if(q?.regularMarketPrice==null)return null;
+    return{price:q.regularMarketPrice,currency:(q.currency||'USD').toUpperCase()};
+  }
+
+  const attempts=[
+    // 1. query1 direct chart
+    async()=>{const r=await fetch(baseUrl,{signal:AbortSignal.timeout(6000),mode:'cors'});if(!r.ok)throw 0;return extractChart(await r.json());},
+    // 2. query2 direct chart
+    async()=>{const r=await fetch(baseUrl2,{signal:AbortSignal.timeout(6000),mode:'cors'});if(!r.ok)throw 0;return extractChart(await r.json());},
+    // 3. allorigins proxy (chart)
+    async()=>{const r=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(baseUrl2)}`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return extractChart(await r.json());},
+    // 4. corsproxy.io (quote endpoint — format différent)
+    async()=>{const r=await fetch(`https://corsproxy.io/?url=${encodeURIComponent(quoteUrl)}`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return extractQuote(await r.json());},
+  ];
+
+  for(const attempt of attempts){
+    try{
+      const result=await attempt();
+      if(result&&result.price!=null){
+        livePrices[t]=result.price;
+        livePrices[t+'__ccy']=result.currency;
+        delete priceErrors[t];
+        return;
+      }
+    }catch(e){/* try next */}
+  }
+  priceErrors[t]='Ticker non trouvé (essayez le format Yahoo : NVDA, MC.PA, CW8.PA)';
+}
+
+async function refreshAllPrices(){
+  if(priceLoading)return;
+  priceLoading=true;
+  updatePriceStatus('loading');
+
+  const cryptoAssets=data.assets.filter(a=>a.cat==='crypto');
+  const bourseAssets=data.assets.filter(a=>a.cat==='bourse');
+
+  // Collect unique CoinGecko IDs
+  const cgIds=[...new Set(cryptoAssets.map(a=>{
+    const id=a.cgId||(a.ticker?CG_MAP[a.ticker.toUpperCase()]:null);
+    return id;
+  }).filter(Boolean))];
+
+  // Collect unique Yahoo tickers
+  const yahooTickers=[...new Set(bourseAssets.map(a=>a.ticker?.toUpperCase()).filter(Boolean))];
+
+  // ── Clear stale errors for IDs we're about to re-fetch ──
+  for(const id of cgIds)delete priceErrors[id];
+  for(const t of yahooTickers)delete priceErrors[t];
+
+  const promises=[];
+  // Fetch FX rate in parallel with prices
+  promises.push(fetchEurUsd());
+  if(cgIds.length)promises.push(fetchCoinGeckoPrices(cgIds));
+  for(const t of yahooTickers)promises.push(fetchYahooPrice(t));
+
+  await Promise.allSettled(promises);
+
+  priceLastUpdated=new Date();
+  priceLoading=false;
+
+  // Count results only for the IDs we requested
+  const allRequested=[...cgIds,...yahooTickers];
+  const errIds=allRequested.filter(id=>priceErrors[id]);
+  const okIds=allRequested.filter(id=>livePrices[id]!=null);
+  const errCount=errIds.length, okCount=okIds.length;
+
+  if(errCount===0&&okCount>0)updatePriceStatus('ok');
+  else if(okCount>0)updatePriceStatus('partial');
+  else if(allRequested.length>0)updatePriceStatus('error');
+  else updatePriceStatus('idle');
+
+  renderAll();
+  autoSnapshot();
+
+  if(errCount>0&&okCount===0){
+    notify(`Impossible de récupérer les cours. Vérifiez votre connexion.`, false);
+  } else if(errCount>0){
+    const names=errIds.slice(0,3).join(', ');
+    notify(`${okCount} cours mis à jour. Non trouvés: ${names}${errIds.length>3?'…':''}`, false);
+  } else if(okCount>0){
+    notify(`${okCount} cours mis à jour ✓`, true);
+  }
+}
+
+function updatePriceStatus(state){
+  const dot=document.getElementById('pb-dot');
+  const text=document.getElementById('pb-text');
+  const btn=document.getElementById('pb-btn');
+  const dots=[...document.querySelectorAll('[id$="-pb-dot"]')];
+  const texts=[...document.querySelectorAll('[id$="-pb-text"]')];
+  const btns=[...document.querySelectorAll('[id$="-pb-btn"]')];
+
+  let dotClass='idle',msg='',btnClass='price-refresh';
+  if(state==='loading'){dotClass='loading';msg='Chargement des cours…';btnClass='price-refresh spinning';}
+  else if(state==='ok'){dotClass='ok';msg='Cours en direct · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+  else if(state==='partial'){dotClass='loading';msg='Partiel · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+  else if(state==='error'){dotClass='error';msg='Erreur de connexion — Réessayer ↻';}
+  else{msg='Cliquer ↻ pour charger les cours';}
+
+  dots.forEach(d=>{d.className='price-bar-dot '+dotClass;});
+  texts.forEach(t=>{t.textContent=msg;});
+  btns.forEach(b=>{b.className=btnClass;});
+}
+
+// ════════════════════════════════════════════════════
+// SNAPSHOTS
+// ════════════════════════════════════════════════════
+function autoSnapshot(){
+  const today=new Date().toISOString().split('T')[0];
+  const{totalNet,byCat}=compute();
+  if(data.assets.length===0)return;
+  const snap={date:today,total:totalNet,byCat:{}};
+  for(const[k,v]of Object.entries(byCat))snap.byCat[k]=v.value;
+  const idx=data.snapshots.findIndex(s=>s.date===today);
+  if(idx>=0)data.snapshots[idx]=snap; else data.snapshots.push(snap);
+  data.snapshots.sort((a,b)=>a.date.localeCompare(b.date));
+  save();
+}
+function filterSnaps(period){
+  const s=data.snapshots;if(!s.length)return[];
+  if(period==='ALL')return s;
+  const m={M3:3,M6:6,Y1:12,M1:1}['M'+period.replace(/\D/g,'')]||999;
+  const now=new Date(),cutoff=new Date(now.getFullYear(),now.getMonth()-m,now.getDate());
+  const cs=cutoff.toISOString().split('T')[0];
+  const f=s.filter(x=>x.date>=cs);
+  if(f.length<s.length){const b=s.filter(x=>x.date<cs);if(b.length)f.unshift(b[b.length-1]);}
+  return f;
+}
+
+// ════════════════════════════════════════════════════
+// COMPUTE
+// ════════════════════════════════════════════════════
+function compute(){
+  const totalDettes=data.dettes.reduce((s,d)=>s+d.remaining,0);
+  const byCat={};let totalBrut=0;
+  for(const a of data.assets){
+    if(!byCat[a.cat])byCat[a.cat]={value:0,invested:0,count:0};
+    const v=assetValue(a),inv=assetInvested(a);
+    byCat[a.cat].value+=v;byCat[a.cat].invested+=inv;byCat[a.cat].count++;
+    totalBrut+=v;
+  }
+  return{totalBrut,totalDettes,totalNet:totalBrut-totalDettes,byCat};
+}
+
+// ════════════════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════════════════
+let donutChart=null,evoChart=null,perfChart=null;
+let evoPeriod='ALL',perfPeriod='ALL';
+const ttBase={backgroundColor:'#1a1e28',borderColor:'#252a38',borderWidth:1,titleColor:'#e8e6df',bodyColor:'#7a7d8a',titleFont:{family:'DM Sans',size:12},bodyFont:{family:'DM Mono',size:12},padding:10};
+const scBase={grid:{color:'rgba(37,42,56,.8)'},ticks:{color:'#3d4155',font:{family:'DM Mono',size:10},maxRotation:0}};
+const bOpts={responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false}},animation:{duration:350}};
+function ld(d){return new Date(d).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'2-digit'});}
+
+function setEvoPeriod(p,btn){evoPeriod=p;document.querySelectorAll('#evo-tabs .period-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderEvoChart();}
+function setPerfPeriod(p,btn){perfPeriod=p;document.querySelectorAll('#perf-tabs .period-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderPerfChart();}
+
+function renderEvoChart(){
+  const snaps=filterSnaps(evoPeriod);
+  const wrap=document.getElementById('evo-wrap'),no=document.getElementById('evo-no-data'),leg=document.getElementById('evo-legend');
+  if(snaps.length<2){wrap.style.display='none';no.style.display='block';leg.innerHTML='';return;}
+  wrap.style.display='block';no.style.display='none';
+  const labels=snaps.map(s=>ld(s.date)),pts=snaps.length>40?0:3;
+  const datasets=[{label:'Total net',data:snaps.map(s=>s.total),borderColor:'#c9a84c',backgroundColor:'rgba(201,168,76,.07)',borderWidth:2.5,pointRadius:pts,pointHoverRadius:5,fill:true,tension:.35}];
+  Object.keys(CATS).filter(k=>snaps.some(s=>s.byCat&&s.byCat[k]>0)).forEach(k=>{datasets.push({label:CATS[k].label,data:snaps.map(s=>(s.byCat&&s.byCat[k])||0),borderColor:CATS[k].color,backgroundColor:CATS[k].color+'10',borderWidth:1.5,pointRadius:0,pointHoverRadius:4,fill:false,tension:.35,hidden:true});});
+  const ctx=document.getElementById('evo-chart').getContext('2d');
+  if(evoChart)evoChart.destroy();
+  evoChart=new Chart(ctx,{type:'line',data:{labels,datasets},options:{...bOpts,plugins:{...bOpts.plugins,tooltip:{...ttBase,callbacks:{label:c=>' '+c.dataset.label+' : '+fmt(c.raw)}}},scales:{x:{...scBase},y:{...scBase,ticks:{...scBase.ticks,callback:v=>fmt(v)}}}}});
+  leg.innerHTML='';datasets.forEach((ds,i)=>{const d=document.createElement('div');d.className='legend-item'+(ds.hidden?' off':'');d.innerHTML=`<div class="legend-line" style="background:${ds.borderColor}"></div><span class="legend-label">${ds.label}</span>`;d.onclick=()=>{const m=evoChart.getDatasetMeta(i);m.hidden=!m.hidden;d.classList.toggle('off');evoChart.update();};leg.appendChild(d);});
+}
+
+function renderPerfChart(){
+  const snaps=filterSnaps(perfPeriod);
+  const wrap=document.getElementById('perf-wrap'),no=document.getElementById('perf-no-data'),co=document.getElementById('perf-callouts');
+  if(snaps.length<2){wrap.style.display='none';no.style.display='block';co.innerHTML='';return;}
+  wrap.style.display='block';no.style.display='none';
+  const base=snaps[0],last=snaps[snaps.length-1];
+  const baseSP=getSP500(base.date)||1,lastSP=getSP500(last.date)||baseSP;
+  const uPerf=base.total>0?((last.total-base.total)/base.total*100):0;
+  const spPerf=((lastSP-baseSP)/baseSP*100),alpha=uPerf-spPerf;
+  co.innerHTML=`<div class="perf-callout"><div class="perf-callout-label">Mon patrimoine</div><div class="perf-callout-value" style="color:${uPerf>=0?'var(--green)':'var(--red)'}">${fmtPct(uPerf)}</div><div class="perf-callout-sub">${fmt(base.total)} → ${fmt(last.total)}</div></div><div class="perf-callout"><div class="perf-callout-label">S&P 500</div><div class="perf-callout-value" style="color:var(--sp500)">${fmtPct(spPerf)}</div><div class="perf-callout-sub">${Math.round(baseSP)} → ${Math.round(lastSP)} pts</div></div><div class="perf-callout" style="border-left:3px solid ${alpha>=0?'var(--green)':'var(--red)'}"><div class="perf-callout-label">Alpha</div><div class="perf-callout-value" style="color:${alpha>=0?'var(--green)':'var(--red)'}">${fmtPct(alpha)}</div><div class="perf-callout-sub">${alpha>=0?'Surperformance':'Sous-performance'}</div></div>`;
+  const ctx=document.getElementById('perf-chart').getContext('2d');
+  if(perfChart)perfChart.destroy();
+  perfChart=new Chart(ctx,{type:'line',data:{labels:snaps.map(s=>ld(s.date)),datasets:[{label:'Mon patrimoine',data:snaps.map(s=>base.total>0?(s.total/base.total*100):100),borderColor:'#c9a84c',backgroundColor:'rgba(201,168,76,.07)',borderWidth:2.5,pointRadius:snaps.length>40?0:3,pointHoverRadius:5,fill:true,tension:.35},{label:'S&P 500',data:snaps.map(s=>{const v=getSP500(s.date);return v?(v/baseSP*100):100;}),borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,.04)',borderWidth:1.5,pointRadius:0,borderDash:[6,3],fill:false,tension:.35}]},options:{...bOpts,plugins:{...bOpts.plugins,tooltip:{...ttBase,callbacks:{label:c=>{const d=(c.raw-100).toFixed(2);return ` ${c.dataset.label} : ${c.raw.toFixed(1)} (${d>=0?'+':''}${d}%)`;} }}},scales:{x:{...scBase},y:{...scBase,ticks:{...scBase.ticks,callback:v=>v.toFixed(0)}}}}});
+}
+
+function renderDonut(byCat){
+  const cats=Object.keys(byCat).filter(k=>byCat[k].value>0);
+  const ctx=document.getElementById('donut-chart').getContext('2d');
+  if(donutChart)donutChart.destroy();
+  if(!cats.length){ctx.clearRect(0,0,300,300);return;}
+  donutChart=new Chart(ctx,{type:'doughnut',data:{labels:cats.map(k=>CATS[k].label),datasets:[{data:cats.map(k=>byCat[k].value),backgroundColor:cats.map(k=>CATS[k].color),borderColor:'#13161e',borderWidth:3}]},options:{cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+fmt(c.raw)},...ttBase}},animation:{animateRotate:true,duration:500}}});
+}
+
+// ════════════════════════════════════════════════════
+// PRICE CELL helpers
+// ════════════════════════════════════════════════════
+function priceCell(a){
+  const live=getLivePrice(a);
+  const err=hasPriceError(a);
+  const stored=a.currentPrice;
+  if(live!=null)return`<div class="price-live"><div class="price-live-dot"></div><span>${fmtLivePrice(a,live)}</span></div>`;
+  if(err){const key=a.cat==='crypto'?(a.cgId||(CG_MAP[a.ticker?.toUpperCase()])):a.ticker?.toUpperCase();return`<div class="price-live"><div class="price-live-dot err"></div><span class="price-err-badge" title="${priceErrors[key]||''}">ERR</span></div>`;}
+  if(stored)return`<div class="price-live"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">${fmtLivePrice(a,stored)}</span></div>`;
+  return`<span style="color:var(--text-muted);font-family:var(--fm);font-size:11px">—</span>`;
+}
+
+// ════════════════════════════════════════════════════
+// CONSOLIDATED VIEW (bourse & crypto)
+// ════════════════════════════════════════════════════
+function getConsolidated(cat){
+  const byKey={};
+  for(const a of data.assets.filter(x=>x.cat===cat)){
+    const key=(a.ticker||a.name).toUpperCase();
+    if(!byKey[key])byKey[key]={name:a.name,ticker:a.ticker||'',envelopes:new Set(),totalQty:0,totalInvested:0,lots:[],cgId:a.cgId,exchange:a.exchange};
+    const g=byKey[key];
+    const qty=a.quantity||0,pru=a.pru||0,fees=a.fees||0;
+    g.totalQty+=qty;g.totalInvested+=qty*pru+fees;
+    if(a.enveloppe)g.envelopes.add(a.enveloppe);
+    if(a.exchange)g.envelopes.add(a.exchange);
+    if(a.cgId&&!g.cgId)g.cgId=a.cgId;
+    g.lots.push(a);
+  }
+  return Object.values(byKey).map(g=>{
+    // Use live price if available
+    const mockAsset={cat,ticker:g.ticker,cgId:g.cgId};
+    const liveP=getLivePrice(mockAsset);
+    const cp=liveP??g.lots[0]?.currentPrice??0;
+    g.currentPrice=cp;
+    g.totalValue=g.totalQty*cp;
+    g.pruMoyen=g.totalQty>0?g.totalInvested/g.totalQty:0;
+    g.pl=g.totalValue-g.totalInvested;
+    g.plPct=g.totalInvested>0?(g.pl/g.totalInvested*100):0;
+    g.isLive=liveP!=null;
+    g.hasError=hasPriceError(mockAsset);
+    g._mockAsset=mockAsset;
+    return g;
+  }).sort((a,b)=>b.totalValue-a.totalValue);
+}
+
+function renderConsolidatedTable(cat){
+  const groups=getConsolidated(cat);
+  const totalVal=groups.reduce((s,g)=>s+g.totalValue,0);
+  if(!groups.length)return`<div class="empty"><div class="empty-icon">${CATS[cat].icon}</div><div class="empty-text">Aucune position enregistrée.</div></div>`;
+  const isBourse=cat==='bourse';const col=CATS[cat].color;
+  let h=`<div class="table-wrap"><table><thead><tr>
+    <th>Actif</th><th>${isBourse?'Enveloppe':'Plateforme'}</th>
+    <th class="th-r">Quantité</th><th class="th-r">PRU moy.</th>
+    <th class="th-r">Cours <span style="color:var(--green);font-family:var(--fm)">●</span></th>
+    <th class="th-r">Valeur</th><th class="th-r">+/- val.</th><th class="th-r">+/- %</th><th class="th-r">Poids</th>
+  </tr></thead><tbody>`;
+  for(const g of groups){
+    const poids=totalVal>0?(g.totalValue/totalVal*100):0;
+    const plCl=g.pl>=0?'var(--green)':'var(--red)';
+    const envs=[...g.envelopes].map(e=>isBourse?`<span class="env-pill" style="background:${ENV_COLORS[e]||'rgba(255,255,255,.05)'};color:${ENV_TEXT[e]||'var(--text-dim)'}">${ENV_LABELS[e]||e}</span>`:`<span class="badge" style="background:#f7931a18;color:var(--crypto)">${e}</span>`).join(' ');
+    const coursHtml=g.isLive
+      ?`<div class="price-live"><div class="price-live-dot"></div>${fmtLivePrice(g._mockAsset,g.currentPrice)}</div>`
+      :g.hasError?`<span class="price-err-badge">ERR</span>`
+      :g.currentPrice>0?`<span style="color:var(--text-dim);font-family:var(--fm)">${fmtLivePrice(g._mockAsset,g.currentPrice)}</span>`:'—';
+    h+=`<tr class="clickable">
+      <td><div style="font-size:13px">${g.name}</div>${g.ticker?`<div style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">${g.ticker}${g.cgId&&!isBourse?` <span style="color:var(--text-muted)">· ${g.cgId}</span>`:''}${g.hasError?` <span style="color:var(--red);font-size:10px">⚠ Non trouvé</span>`:''}</div>`:''}</td>
+      <td>${envs||'—'}</td>
+      <td class="td-r">${fmtQ(g.totalQty)}</td>
+      <td class="td-r">${g.pruMoyen>0?fmtDec(g.pruMoyen):'—'}</td>
+      <td class="td-r">${coursHtml}</td>
+      <td class="td-r" style="font-size:14px">${fmt(g.totalValue)}</td>
+      <td class="td-r" style="color:${plCl}">${g.pl>=0?'+':''}${fmt(g.pl)}</td>
+      <td class="td-r">${g.plPct!==0?`<span class="${g.plPct>=0?'spark-pos':'spark-neg'}">${fmtPct(g.plPct)}</span>`:'—'}</td>
+      <td class="td-r"><div class="pct-bar-wrap" style="justify-content:flex-end;gap:6px"><span style="font-family:var(--fm);font-size:11px;color:var(--text-dim)">${poids.toFixed(1)}%</span><div class="pct-bar-track" style="width:55px"><div class="pct-bar-fill" style="width:${poids}%;background:${col}"></div></div></div></td>
+    </tr>`;
+  }
+  h+=`</tbody></table></div>`;
+  const totalPl=groups.reduce((s,g)=>s+g.pl,0);
+  const totalInv=groups.reduce((s,g)=>s+g.totalInvested,0);
+  const totalPlPct=totalInv>0?(totalPl/totalInv*100):0;
+  const liveCount=groups.filter(g=>g.isLive).length;
+  const errCount=groups.filter(g=>g.hasError).length;
+  h+=`<div style="display:flex;gap:20px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:flex-end">
+    <div><div class="kpi-label">Total portefeuille</div><div style="font-family:var(--fd);font-size:22px">${fmt(totalVal)}</div></div>
+    <div><div class="kpi-label">Investi</div><div style="font-family:var(--fd);font-size:22px;color:var(--text-dim)">${fmt(totalInv)}</div></div>
+    <div><div class="kpi-label">+/- value</div><div style="font-family:var(--fd);font-size:22px;color:${totalPl>=0?'var(--green)':'var(--red)'}">${totalPl>=0?'+':''}${fmt(totalPl)}</div></div>
+    <div><div class="kpi-label">Performance</div><div class="${totalPlPct>=0?'spark-pos':'spark-neg'}" style="font-size:16px;margin-top:4px">${fmtPct(totalPlPct)}</div></div>
+    <div style="margin-left:auto;text-align:right">
+      ${liveCount>0?`<div style="font-size:11px;color:var(--green);font-family:var(--fm)">● ${liveCount} cours en direct</div>`:''}
+      ${errCount>0?`<div style="font-size:11px;color:var(--red);font-family:var(--fm)">⚠ ${errCount} non trouvé${errCount>1?'s':''}</div>`:''}
+      ${cat==='crypto'?`<div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);margin-top:4px">1 € ≈ ${fxRate.toFixed(4)} $ (taux live)</div>`:''}
+    </div>
+  </div>`;
+  return h;
+}
+
+function renderLotsTable(cat){
+  const assets=data.assets.filter(a=>a.cat===cat).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(!assets.length)return`<div class="empty"><div class="empty-icon">${CATS[cat].icon}</div><div class="empty-text">Aucune position.</div></div>`;
+  const isBourse=cat==='bourse';
+  const isCrypto=cat==='crypto';
+  // For crypto: add a "Devise tx" column, show amounts in lot's currency
+  const txHeader=isCrypto?'<th>Devise</th>':'';
+  let h=`<div class="table-wrap"><table><thead><tr>
+    <th>Date achat</th><th>Actif</th><th>${isBourse?'Enveloppe':'Plateforme'}</th>
+    ${txHeader}
+    <th class="th-r">Qté</th><th class="th-r">PRU lot</th>
+    <th class="th-r">Cours live</th>
+    <th class="th-r">Valeur lot</th><th class="th-r">+/- val. lot</th><th class="th-r">Frais</th>
+    ${isCrypto?'<th class="th-r" style="color:var(--text-dim);font-size:9px">Val. €</th>':''}
+    <th></th>
+  </tr></thead><tbody>`;
+  for(const a of assets){
+    const env=a.enveloppe||a.exchange||'';
+    const envHtml=isBourse&&a.enveloppe
+      ?`<span class="env-pill" style="background:${ENV_COLORS[env]||'rgba(255,255,255,.05)'};color:${ENV_TEXT[env]||'var(--text-dim)'}">${ENV_LABELS[env]||env}</span>`
+      :(a.exchange?`<span style="font-size:12px;color:var(--text-dim)">${a.exchange}</span>`:'—');
+
+    if(isCrypto){
+      // ── CRYPTO: display amounts in lot's transaction currency ──
+      const ccy=a.txCurrency||'EUR';
+      const ccyBadge=ccy==='USD'
+        ?`<span style="font-family:var(--fm);font-size:10px;color:#38bdf8;background:rgba(56,189,248,.1);padding:2px 6px;border-radius:4px">$</span>`
+        :`<span style="font-family:var(--fm);font-size:10px;color:var(--gold);background:var(--gold-dim);padding:2px 6px;border-radius:4px">€</span>`;
+      const pru=lotPruInTxCcy(a);
+      const fees=lotFeesInTxCcy(a);
+      const lotVal=lotValueInTxCcy(a);
+      const lotPl=lotPlInTxCcy(a);
+      const lotInvested=(a.quantity||0)*pru+fees;
+      const lotPlPct=lotInvested>0?(lotPl/lotInvested*100):null;
+      // EUR value (for reference)
+      const valEur=assetValue(a);
+      h+=`<tr>
+        <td class="td-mono" style="font-size:11px;color:var(--text-dim);white-space:nowrap">${a.date?new Date(a.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'—'}</td>
+        <td><div style="font-size:13px">${a.name}</div>${a.ticker?`<span style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">${a.ticker}${a.cgId?` · ${a.cgId}`:''}</span>`:''}</td>
+        <td>${a.exchange||'—'}</td>
+        <td>${ccyBadge}</td>
+        <td class="td-r">${a.quantity!=null?fmtQ(a.quantity):'—'}</td>
+        <td class="td-r">${pru>0?fmtTxAmount(pru,ccy):'—'}</td>
+        <td class="td-r">${priceCell(a)}</td>
+        <td class="td-r">${fmtTxAmount(lotVal,ccy)}</td>
+        <td class="td-r" style="color:${lotPl>=0?'var(--green)':'var(--red)'}">${lotPl>=0?'+':''}${fmtTxAmount(lotPl,ccy)}${lotPlPct!==null?`<br><span style="font-size:10px;color:var(--text-muted)">(${fmtPct(lotPlPct)})</span>`:''}</td>
+        <td class="td-r" style="color:var(--text-dim)">${fees>0?fmtTxAmount(fees,ccy):'—'}</td>
+        <td class="td-r" style="color:var(--text-muted);font-size:11px;font-family:var(--fm)">${fmt(valEur)}</td>
+        <td><button class="action-btn" onclick="editAsset('${a.id}')">✎</button><button class="action-btn del" onclick="deleteAsset('${a.id}')">✕</button></td>
+      </tr>`;
+    } else {
+      // ── BOURSE: unchanged, always EUR ──
+      const v=assetValue(a),inv=assetInvested(a),pl=inv>0?v-inv:null,plPct=inv>0?((v-inv)/inv*100):null;
+      h+=`<tr>
+        <td class="td-mono" style="font-size:11px;color:var(--text-dim);white-space:nowrap">${a.date?new Date(a.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'—'}</td>
+        <td><div style="font-size:13px">${a.name}</div>${a.ticker?`<span style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">${a.ticker}</span>`:''}</td>
+        <td>${envHtml}</td>
+        <td class="td-r">${a.quantity!=null?fmtQ(a.quantity):'—'}</td>
+        <td class="td-r">${a.pru>0?fmtDec(a.pru):'—'}</td>
+        <td class="td-r">${priceCell(a)}</td>
+        <td class="td-r">${fmt(v)}</td>
+        <td class="td-r" style="color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}${plPct!==null?`<br><span style="font-size:10px;color:var(--text-muted)">(${fmtPct(plPct)})</span>`:''}</td>
+        <td class="td-r" style="color:var(--text-dim)">${a.fees>0?fmtDec(a.fees):'—'}</td>
+        <td><button class="action-btn" onclick="editAsset('${a.id}')">✎</button><button class="action-btn del" onclick="deleteAsset('${a.id}')">✕</button></td>
+      </tr>`;
+    }
+  }
+  return h+'</tbody></table></div>';
+}
+
+function switchSecTab(cat,tab,btn){
+  btn.closest('.sec-tabs').querySelectorAll('.sec-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
+  document.getElementById(cat+'-tab-consolide').style.display=tab==='consolide'?'block':'none';
+  document.getElementById(cat+'-tab-lots').style.display=tab==='lots'?'block':'none';
+}
+
+// ════════════════════════════════════════════════════
+// RENDER ALL
+// ════════════════════════════════════════════════════
+function renderAll(){
+  const{totalBrut,totalDettes,totalNet,byCat}=compute();
+  document.getElementById('today-date').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('kpi-total').textContent=fmt(totalNet);
+  document.getElementById('kpi-brut').textContent=`Brut : ${fmt(totalBrut)} — Dettes : ${fmt(totalDettes)}`;
+  const sk=(vId,dId,cat)=>{const c=byCat[cat]||{value:0,invested:0};document.getElementById(vId).textContent=fmt(c.value);const el=document.getElementById(dId);if(c.invested>0){const p=((c.value-c.invested)/c.invested)*100;el.className='kpi-delta '+(p>=0?'pos':'neg');el.textContent=fmtPct(p)+(p>=0?' ↑':' ↓');el.style.display='inline-flex';}else el.style.display='none';};
+  sk('kpi-immo','kpi-immo-d','immo');sk('kpi-bourse','kpi-bourse-d','bourse');sk('kpi-crypto','kpi-crypto-d','crypto');sk('kpi-epargne','kpi-epargne-d','epargne');
+  renderDonut(byCat);
+  const leg=document.getElementById('alloc-legend');leg.innerHTML='';
+  Object.entries(byCat).filter(([,v])=>v.value>0).sort(([,a],[,b])=>b.value-a.value).forEach(([k,v])=>{const pct=totalBrut>0?(v.value/totalBrut*100).toFixed(1):0;leg.innerHTML+=`<div class="alloc-item" onclick="showSection('${k}',null)"><div class="alloc-dot" style="background:${CATS[k].color}"></div><div class="alloc-name">${CATS[k].icon} ${CATS[k].label}</div><div class="alloc-amount">${fmt(v.value)}</div><div class="alloc-pct">${pct}%</div></div>`;});
+  if(!leg.innerHTML)leg.innerHTML='<div class="empty" style="padding:14px"><div class="empty-text">Aucun actif</div></div>';
+  renderEvoChart();renderPerfChart();
+  // All assets
+  const tbody=document.getElementById('all-assets-table'),emEl=document.getElementById('all-assets-empty');
+  tbody.innerHTML='';const sorted=[...data.assets].sort((a,b)=>assetValue(b)-assetValue(a));
+  emEl.style.display=sorted.length?'none':'block';
+  for(const a of sorted){const v=assetValue(a),inv=assetInvested(a),pl=inv>0?v-inv:null,plP=inv>0?((v-inv)/inv*100):null;
+    tbody.innerHTML+=`<tr><td><div style="font-size:13px">${a.name}</div>${a.ticker?`<div style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">${a.ticker}</div>`:''}</td><td><span class="badge" style="background:${CATS[a.cat].color}22;color:${CATS[a.cat].color}"><span class="badge-dot" style="background:${CATS[a.cat].color}"></span>${CATS[a.cat].label}</span></td><td class="td-r">${fmt(v)}</td><td class="td-r" style="color:var(--text-dim)">${inv>0?fmt(inv):'—'}</td><td class="td-r" style="color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}${plP!==null?`<span style="font-size:10px;margin-left:3px">(${fmtPct(plP)})</span>`:''}</td><td class="td-r">${(a.cat==='bourse'||a.cat==='crypto')?priceCell(a):'—'}</td><td><button class="action-btn" onclick="editAsset('${a.id}')">✎</button><button class="action-btn del" onclick="deleteAsset('${a.id}')">✕</button></td></tr>`;
+  }
+  renderImmo(byCat.immo||{value:0,invested:0,count:0},totalBrut);
+  renderBourse(byCat.bourse||{value:0,invested:0,count:0},totalBrut);
+  renderCrypto(byCat.crypto||{value:0,invested:0,count:0},totalBrut);
+  renderEpargne(byCat.epargne||{value:0,invested:0,count:0},totalBrut);
+  renderAutre(byCat.autre||{value:0,invested:0,count:0},totalBrut);
+  renderDettes(totalDettes);renderHistory();
+}
+
+// ── IMMO ────────────────────────────────────────────
+function renderImmo(stats,totalBrut){
+  const el=document.getElementById('section-immo');
+  const assets=data.assets.filter(a=>a.cat==='immo').sort((a,b)=>assetValue(b)-assetValue(a));
+  const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
+  const pl=stats.invested>0?stats.value-stats.invested:null,plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
+  const SLAB={rp:'Résidence principale',rs:'Résidence secondaire',locatif:'Locatif',scpi:'SCPI'};
+  el.innerHTML=`<div class="cat-header"><div class="cat-icon-big" style="background:#6e8efb22">🏠</div><div><div class="cat-title-big" style="color:var(--immo)">Immobilier</div><div class="topbar-date">${assets.length} bien${assets.length!==1?'s':''}</div></div><button class="btn btn-gold ml-auto" onclick="openAddAsset('immo')">+ Ajouter</button></div>
+  <div class="kpi-row kpi-4" style="margin-bottom:20px"><div class="kpi-card"><div class="kpi-label">Valeur marché</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Prix d'achat</div><div class="kpi-value" style="font-size:26px;color:var(--text-dim)">${stats.invested>0?fmt(stats.invested):'—'}</div></div><div class="kpi-card"><div class="kpi-label">Plus-value latente</div><div class="kpi-value" style="font-size:26px;color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}</div>${plP!==null?`<div class="kpi-delta ${plP>=0?'pos':'neg'}">${fmtPct(plP)}</div>`:''}</div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div></div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">🏠 Biens</span></div><div class="panel-body">
+  ${!assets.length?`<div class="empty"><div class="empty-icon">🏠</div><div class="empty-text">Aucun bien enregistré.</div></div>`:
+  assets.map(a=>{const v=assetValue(a),inv=assetInvested(a),pl2=inv>0?v-inv:null,plP2=inv>0?((v-inv)/inv*100):null;const rentY=a.monthlyRent&&v>0?((a.monthlyRent*12)/v*100).toFixed(2):null;
+    return`<div style="padding:16px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px"><div><div style="font-size:14px;font-weight:500">${a.name}</div><div style="display:flex;gap:8px;margin-top:5px;flex-wrap:wrap">${a.subtype?`<span class="badge" style="background:#6e8efb18;color:var(--immo)">${SLAB[a.subtype]||a.subtype}</span>`:''} ${a.surface?`<span class="badge" style="background:var(--surface2);color:var(--text-dim)">${a.surface} m²</span>`:''} ${a.address?`<span style="font-size:11px;color:var(--text-dim)">${a.address}</span>`:''}</div><div style="display:flex;gap:20px;margin-top:10px;flex-wrap:wrap">${a.date?`<div><div class="kpi-label" style="margin-bottom:2px">Acquisition</div><div style="font-family:var(--fm);font-size:12px">${new Date(a.date).toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</div></div>`:''} ${inv>0?`<div><div class="kpi-label" style="margin-bottom:2px">Prix d'achat</div><div style="font-family:var(--fm);font-size:12px">${fmt(inv)}</div></div>`:''} ${a.monthlyRent?`<div><div class="kpi-label" style="margin-bottom:2px">Loyer</div><div style="font-family:var(--fm);font-size:12px;color:var(--green)">${fmt(a.monthlyRent)} / mois</div></div>`:''} ${rentY?`<div><div class="kpi-label" style="margin-bottom:2px">Rdt brut</div><div style="font-family:var(--fm);font-size:12px;color:var(--gold)">${rentY}%</div></div>`:''}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-family:var(--fd);font-size:22px">${fmt(v)}</div>${pl2!==null?`<div style="font-family:var(--fm);font-size:12px;color:${pl2>=0?'var(--green)':'var(--red)'}">${pl2>=0?'+':''}${fmt(pl2)} (${fmtPct(plP2)})</div>`:''}<div style="display:flex;gap:4px;justify-content:flex-end;margin-top:8px"><button class="action-btn" onclick="editAsset('${a.id}')">✎</button><button class="action-btn del" onclick="deleteAsset('${a.id}')">✕</button></div></div></div></div>`;}).join('')}
+  </div></div>`;
+}
+
+// ── BOURSE ──────────────────────────────────────────
+function renderBourse(stats,totalBrut){
+  const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
+  const pl=stats.invested>0?stats.value-stats.invested:null,plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
+  document.getElementById('bourse-kpi').innerHTML=`<div class="kpi-card"><div class="kpi-label">Valeur portefeuille</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Investi</div><div class="kpi-value" style="font-size:26px;color:var(--text-dim)">${stats.invested>0?fmt(stats.invested):'—'}</div></div><div class="kpi-card"><div class="kpi-label">+/- value</div><div class="kpi-value" style="font-size:26px;color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}</div>${plP!==null?`<div class="kpi-delta ${plP>=0?'pos':'neg'}">${fmtPct(plP)}</div>`:''}</div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div>`;
+  document.getElementById('bourse-tab-consolide').innerHTML=renderConsolidatedTable('bourse');
+  document.getElementById('bourse-tab-lots').innerHTML=renderLotsTable('bourse');
+}
+
+// ── CRYPTO ──────────────────────────────────────────
+function renderCrypto(stats,totalBrut){
+  const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
+  const pl=stats.invested>0?stats.value-stats.invested:null,plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
+  document.getElementById('crypto-kpi').innerHTML=`<div class="kpi-card"><div class="kpi-label">Valeur portefeuille</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Investi</div><div class="kpi-value" style="font-size:26px;color:var(--text-dim)">${stats.invested>0?fmt(stats.invested):'—'}</div></div><div class="kpi-card"><div class="kpi-label">+/- value</div><div class="kpi-value" style="font-size:26px;color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}</div>${plP!==null?`<div class="kpi-delta ${plP>=0?'pos':'neg'}">${fmtPct(plP)}</div>`:''}</div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div>`;
+  document.getElementById('crypto-tab-consolide').innerHTML=renderConsolidatedTable('crypto');
+  document.getElementById('crypto-tab-lots').innerHTML=renderLotsTable('crypto');
+}
+
+// ── ÉPARGNE ─────────────────────────────────────────
+function renderEpargne(stats,totalBrut){
+  const el=document.getElementById('section-epargne');
+  const assets=data.assets.filter(a=>a.cat==='epargne').sort((a,b)=>assetValue(b)-assetValue(a));
+  const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
+  const ELAB={livreta:'Livret A',ldds:'LDDS',lep:'LEP',pel:'PEL',cel:'CEL',aveuros:'Assur.-vie €',compte:'Compte',per:'PER',autre:'Autre'};
+  el.innerHTML=`<div class="cat-header"><div class="cat-icon-big" style="background:#c9a84c22">🏦</div><div><div class="cat-title-big" style="color:var(--epargne)">Épargne</div><div class="topbar-date">${assets.length} compte${assets.length!==1?'s':''}</div></div><button class="btn btn-gold ml-auto" onclick="openAddAsset('epargne')">+ Ajouter</button></div>
+  <div class="kpi-row kpi-3" style="margin-bottom:20px"><div class="kpi-card"><div class="kpi-label">Total épargne</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div><div class="kpi-card"><div class="kpi-label">Nb comptes</div><div class="kpi-value" style="font-size:26px">${assets.length}</div></div></div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">🏦 Comptes & livrets</span></div><div class="panel-body">
+  ${!assets.length?`<div class="empty"><div class="empty-icon">🏦</div><div class="empty-text">Aucun compte.</div></div>`:
+  `<div class="table-wrap"><table><thead><tr><th>Compte</th><th>Type</th><th>Banque</th><th class="th-r">Solde</th><th class="th-r">Taux</th><th class="th-r">Part</th><th></th></tr></thead><tbody>
+  ${assets.map(a=>{const v=assetValue(a);const poids=stats.value>0?(v/stats.value*100).toFixed(1):0;return`<tr><td>${a.name}</td><td><span class="badge" style="background:#c9a84c18;color:var(--gold)">${ELAB[a.subtype]||a.subtype||'—'}</span></td><td style="color:var(--text-dim);font-size:12px">${a.bank||'—'}</td><td class="td-r">${fmt(v)}</td><td class="td-r" style="color:var(--gold)">${a.rate>0?a.rate+'%':'—'}</td><td class="td-r"><div class="pct-bar-wrap" style="justify-content:flex-end;gap:6px"><span style="font-family:var(--fm);font-size:11px;color:var(--text-dim)">${poids}%</span><div class="pct-bar-track" style="width:50px"><div class="pct-bar-fill" style="width:${poids}%;background:var(--epargne)"></div></div></div></td><td><button class="action-btn" onclick="editAsset('${a.id}')">✎</button><button class="action-btn del" onclick="deleteAsset('${a.id}')">✕</button></td></tr>`;}).join('')}
+  </tbody></table></div>`}
+  </div></div>`;
+}
+
+// ── AUTRE ────────────────────────────────────────────
+function renderAutre(stats,totalBrut){
+  const el=document.getElementById('section-autre');
+  const assets=data.assets.filter(a=>a.cat==='autre').sort((a,b)=>assetValue(b)-assetValue(a));
+  const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
+  const pl=stats.invested>0?stats.value-stats.invested:null,plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
+  const ALAB={vehicle:'Véhicule',art:'Art & Collections',metals:'Métaux précieux',jewelry:'Bijoux',pe:'Private equity',other:'Autre'};
+  el.innerHTML=`<div class="cat-header"><div class="cat-icon-big" style="background:#a855f722">✦</div><div><div class="cat-title-big" style="color:var(--autre)">Autres actifs</div><div class="topbar-date">Métaux, art, véhicules, PE…</div></div><button class="btn btn-gold ml-auto" onclick="openAddAsset('autre')">+ Ajouter</button></div>
+  <div class="kpi-row kpi-4" style="margin-bottom:20px"><div class="kpi-card"><div class="kpi-label">Valeur totale</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Investi</div><div class="kpi-value" style="font-size:26px;color:var(--text-dim)">${stats.invested>0?fmt(stats.invested):'—'}</div></div><div class="kpi-card"><div class="kpi-label">+/- value</div><div class="kpi-value" style="font-size:26px;color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}</div>${plP!==null?`<div class="kpi-delta ${plP>=0?'pos':'neg'}">${fmtPct(plP)}</div>`:''}</div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div></div>
+  <div class="panel"><div class="panel-header"><span class="panel-title">✦ Inventaire</span></div><div class="panel-body">
+  ${!assets.length?`<div class="empty"><div class="empty-icon">✦</div><div class="empty-text">Aucun actif.</div></div>`:
+  `<div class="table-wrap"><table><thead><tr><th>Actif</th><th>Type</th><th class="th-r">Val. achat</th><th class="th-r">Val. actuelle</th><th class="th-r">+/- value</th><th></th></tr></thead><tbody>
+  ${assets.map(a=>{const v=assetValue(a),inv=assetInvested(a),pl2=inv>0?v-inv:null,plP2=inv>0?((v-inv)/inv*100):null;return`<tr><td><div>${a.name}</div>${a.date?`<div style="font-size:11px;color:var(--text-dim);font-family:var(--fm)">${new Date(a.date).toLocaleDateString('fr-FR',{year:'numeric',month:'long'})}</div>`:''}</td><td><span class="badge" style="background:#a855f718;color:var(--autre)">${ALAB[a.subtype]||a.subtype||'—'}</span></td><td class="td-r" style="color:var(--text-dim)">${inv>0?fmt(inv):'—'}</td><td class="td-r">${fmt(v)}</td><td class="td-r" style="color:${pl2===null?'var(--text-dim)':pl2>=0?'var(--green)':'var(--red)'}">${pl2!==null?(pl2>=0?'+':'')+fmt(pl2):'—'}${plP2!==null?`<span style="font-size:10px;margin-left:3px">(${fmtPct(plP2)})</span>`:''}</td><td><button class="action-btn" onclick="editAsset('${a.id}')">✎</button><button class="action-btn del" onclick="deleteAsset('${a.id}')">✕</button></td></tr>`;}).join('')}</tbody></table></div>`}
+  </div></div>`;
+}
+
+// ── DETTES ────────────────────────────────────────────
+function renderDettes(totalDettes){
+  const kEl=document.getElementById('dette-kpi'),lEl=document.getElementById('dette-list'),eEl=document.getElementById('dette-empty');
+  const men=data.dettes.reduce((s,d)=>s+(d.monthly||0),0),init=data.dettes.reduce((s,d)=>s+(d.initial||0),0);
+  const prog=init>0?((init-totalDettes)/init*100):0;
+  kEl.innerHTML=`<div class="kpi-card"><div class="kpi-label">Dettes totales</div><div class="kpi-value" style="font-size:26px;color:var(--red)">${fmt(totalDettes)}</div><div class="kpi-sub">${data.dettes.length} crédit${data.dettes.length!==1?'s':''}</div></div><div class="kpi-card"><div class="kpi-label">Mensualités</div><div class="kpi-value" style="font-size:26px">${fmt(men)}</div><div class="kpi-sub">/ mois</div></div><div class="kpi-card"><div class="kpi-label">Remboursé</div><div class="kpi-value" style="font-size:26px;color:var(--green)">${fmt(init-totalDettes)}</div><div style="margin-top:10px;height:3px;background:var(--border);border-radius:2px"><div style="height:100%;width:${Math.min(prog,100)}%;background:var(--green);border-radius:2px"></div></div><div style="font-size:11px;color:var(--text-dim);margin-top:4px;font-family:var(--fm)">${prog.toFixed(1)}%</div></div>`;
+  if(!data.dettes.length){lEl.innerHTML='';eEl.style.display='block';return;}eEl.style.display='none';
+  const types={immo:'Crédit immobilier',conso:'Consommation',auto:'Auto/LOA',etudiant:'Étudiant',pro:'Professionnel',autre:'Autre'};
+  lEl.innerHTML=data.dettes.map(d=>{const p=d.initial>0?((d.initial-d.remaining)/d.initial*100):0;return`<div class="dette-card"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px"><div><div style="font-size:14px">${d.name}</div><div style="font-size:11px;color:var(--text-dim);font-family:var(--fm);margin-top:2px">${types[d.type]||d.type}${d.rate?' · '+d.rate+'% / an':''}</div></div><div style="display:flex;align-items:flex-start;gap:10px"><div style="text-align:right"><div style="font-family:var(--fm);font-size:16px;color:var(--red)">${fmt(d.remaining)}</div>${d.monthly?`<div style="font-size:11px;color:var(--text-dim);font-family:var(--fm)">${fmt(d.monthly)} / mois</div>`:''}</div><div style="display:flex;gap:3px"><button class="action-btn" onclick="editDette('${d.id}')">✎</button><button class="action-btn del" onclick="deleteDette('${d.id}')">✕</button></div></div></div>${d.initial>0?`<div class="dette-progress"><div class="dette-progress-fill" style="width:${Math.min(p,100)}%"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);font-family:var(--fm);margin-top:5px"><span>${fmt(d.initial-d.remaining)} remb.</span><span>${p.toFixed(1)}%</span>${d.end?`<span>Fin : ${new Date(d.end).toLocaleDateString('fr-FR')}</span>`:''}</div>`:''}</div>`;}).join('');
+}
+
+// ── HISTORY ───────────────────────────────────────────
+function renderHistory(){
+  const el=document.getElementById('history-list');
+  if(!data.history.length){el.innerHTML='<div class="empty"><div class="empty-text">Aucune opération.</div></div>';return;}
+  const lbl={add:'Ajout',edit:'Modification',delete:'Suppression','add-dette':'Ajout dette'};
+  el.innerHTML=data.history.slice(0,60).map(h=>{const col=(CATS[h.cat]||{color:'#7a7d8a'}).color;const isDel=h.action==='delete';return`<div class="history-item"><div class="history-icon" style="background:${col}22;color:${col}">${isDel?'✕':h.action==='edit'?'✎':'+'}</div><div class="history-info"><div class="history-name">${h.name}</div><div class="history-date">${lbl[h.action]||h.action} · ${new Date(h.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div></div>${h.value?`<div style="font-family:var(--fm);font-size:13px;color:${isDel?'var(--red)':'var(--text)'}">${fmt(h.value)}</div>`:''}</div>`;}).join('');
+}
+
+// ════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════
+function showSection(id,navEl){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  const ni=navEl||document.querySelector(`[data-sec="${id}"]`);if(ni)ni.classList.add('active');
+  renderAll();
+}
+
+// ════════════════════════════════════════════════════
+// DYNAMIC MODAL
+// ════════════════════════════════════════════════════
+let editingAssetId=null,editingDetteId=null,currentModalCat='immo';
+
+function openAddAsset(cat){editingAssetId=null;currentModalCat=cat||'immo';document.getElementById('modal-asset-title').textContent='Nouvel actif';buildModalFor(currentModalCat,null);document.getElementById('modal-asset').classList.add('open');}
+function editAsset(id){const a=data.assets.find(x=>x.id===id);if(!a)return;editingAssetId=id;currentModalCat=a.cat;document.getElementById('modal-asset-title').textContent="Modifier l'actif";buildModalFor(a.cat,a);document.getElementById('modal-asset').classList.add('open');}
+function switchModalCat(cat){currentModalCat=cat;buildModalFor(cat,null);}
+function closeModal(name){document.getElementById('modal-'+name).classList.remove('open');}
+
+function buildModalFor(cat,existing){
+  const body=document.getElementById('modal-asset-body');
+  const catBtns=Object.entries(CATS).map(([k,c])=>`<button class="cat-sel-btn${k===cat?' active':''}" onclick="switchModalCat('${k}')">${c.icon}<br><span style="font-size:11px">${c.label}</span></button>`).join('');
+  let fields='';
+  if(cat==='immo')fields=buildImmoFields(existing);
+  else if(cat==='bourse')fields=buildBourseFields(existing);
+  else if(cat==='crypto')fields=buildCryptoFields(existing);
+  else if(cat==='epargne')fields=buildEpargneFields(existing);
+  else if(cat==='autre')fields=buildAutreFields(existing);
+  body.innerHTML=`<div class="cat-selector">${catBtns}</div>${fields}`;
+}
+
+// IMMO
+function buildImmoFields(a){const v=a||{};const st=v.subtype||'rp';
+  return`<div class="fg"><label>Nom du bien</label><input type="text" id="f-name" placeholder="Ex: Appartement Paris 11e…" value="${v.name||''}"></div>
+  <div class="fg"><label>Type</label><select id="f-subtype" onchange="toggleImmoFields()"><option value="rp"${st==='rp'?' selected':''}>🏡 Résidence principale</option><option value="rs"${st==='rs'?' selected':''}>🏖 Résidence secondaire</option><option value="locatif"${st==='locatif'?' selected':''}>🏢 Locatif</option><option value="scpi"${st==='scpi'?' selected':''}>📜 SCPI</option></select></div>
+  <div id="fi-addr" style="${st==='scpi'?'display:none':''}"><div class="fr2"><div class="fg"><label>Adresse</label><input type="text" id="f-address" placeholder="12 rue de la Paix…" value="${v.address||''}"></div><div class="fg"><label>Surface (m²)</label><input type="number" id="f-surface" placeholder="75" value="${v.surface||''}"></div></div></div>
+  <div id="fi-scpi" style="${st!=='scpi'?'display:none':''}"><div class="fr2"><div class="fg"><label>Nb de parts</label><input type="number" id="f-nbparts" placeholder="100" value="${v.nbparts||''}"></div><div class="fg"><label>Valeur de part (€)</label><input type="number" id="f-partprice" placeholder="200" step="0.01" value="${v.partprice||''}"></div></div></div>
+  <div class="fsec">Valorisation</div>
+  <div class="fr2"><div class="fg"><label>Prix d'achat (€)</label><input type="number" id="f-invested" placeholder="250 000" step="1" value="${v.invested||''}"></div><div class="fg"><label>Valeur actuelle (€)</label><input type="number" id="f-value" placeholder="320 000" step="1" value="${v.value||''}"></div></div>
+  <div class="fr2"><div class="fg"><label>Date d'acquisition</label><input type="date" id="f-date" value="${v.date||new Date().toISOString().split('T')[0]}"></div><div class="fg"><label>Charges annuelles (€)</label><input type="number" id="f-charges" placeholder="3 600" value="${v.charges||''}"></div></div>
+  <div id="fi-locatif" style="${st!=='locatif'?'display:none':''}"><div class="fsec">Revenus locatifs</div><div class="fr2"><div class="fg"><label>Loyer mensuel (€)</label><input type="number" id="f-rent" placeholder="1 200" value="${v.monthlyRent||''}"></div><div class="fg"><label>Taux d'occupation (%)</label><input type="number" id="f-occ" placeholder="95" value="${v.occupancy||''}"></div></div></div>
+  <div class="fg"><label>Notes</label><input type="text" id="f-notes" placeholder="Remarques…" value="${v.notes||''}"></div>`;}
+
+// BOURSE
+function buildBourseFields(a){const v=a||{};const tp=v.type||'etf',env=v.enveloppe||'cto';
+  return`<div class="fr2"><div class="fg"><label>Type d'actif</label><select id="f-type"><option value="action"${tp==='action'?' selected':''}>Action</option><option value="etf"${tp==='etf'?' selected':''}>ETF</option><option value="opcvm"${tp==='opcvm'?' selected':''}>OPCVM / Fonds</option><option value="obligation"${tp==='obligation'?' selected':''}>Obligation</option><option value="autre"${tp==='autre'?' selected':''}>Autre</option></select></div><div class="fg"><label>Enveloppe</label><select id="f-enveloppe"><option value="pea"${env==='pea'?' selected':''}>PEA</option><option value="cto"${env==='cto'?' selected':''}>CTO</option><option value="av"${env==='av'?' selected':''}>Assurance-vie</option><option value="per"${env==='per'?' selected':''}>PER</option></select></div></div>
+  <div class="fr2"><div class="fg"><label>Nom / Libellé</label><input type="text" id="f-name" placeholder="Amundi MSCI World, Apple Inc…" value="${v.name||''}"></div><div class="fg"><label>Ticker Yahoo Finance</label><input type="text" id="f-ticker" placeholder="CW8.PA, AAPL, MC.PA…" value="${v.ticker||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><div class="hint">Ticker exact de Yahoo Finance. Euronext Paris : <strong>MC.PA</strong>, <strong>BNP.PA</strong>. US : <strong>AAPL</strong>. ETF Amundi : <strong>CW8.PA</strong>.</div></div></div>
+  <div class="fsec">Lot acheté</div>
+  <div class="fr3"><div class="fg"><label>Nombre de titres</label><input type="number" id="f-quantity" placeholder="10" step="0.001" value="${v.quantity||''}"></div><div class="fg"><label>PRU (€ / titre)</label><input type="number" id="f-pru" placeholder="42.50" step="0.0001" value="${v.pru||''}"></div><div class="fg"><label>Frais (€)</label><input type="number" id="f-fees" placeholder="2.50" step="0.01" value="${v.fees||''}"></div></div>
+  <div class="fg"><label>Date d'acquisition</label><input type="date" id="f-date" value="${v.date||new Date().toISOString().split('T')[0]}"></div>
+  <div class="fg"><label>Notes</label><input type="text" id="f-notes" placeholder="Broker, stratégie…" value="${v.notes||''}"></div>
+  <div class="info-box">💡 Le cours sera récupéré automatiquement depuis <strong>Yahoo Finance</strong> via le ticker renseigné. Les prix hors EUR (USD, GBP…) sont affichés dans leur devise d'origine — pensez à en tenir compte.</div>`;}
+
+// CRYPTO
+function buildCryptoFields(a){const v=a||{};
+  const symUp=(v.ticker||'').toUpperCase();
+  const autoId=symUp?CG_MAP[symUp]:'';
+  const cgId=v.cgId||autoId||'';
+  const txCcy=v.txCurrency||'EUR';
+  const pruLabel=txCcy==='USD'?'PRU ($ / unité)':'PRU (€ / unité)';
+  const feesLabel=txCcy==='USD'?'Frais ($)':'Frais (€)';
+  const pruPlaceholder=txCcy==='USD'?'42 000':'38 500';
+  return`<div class="fr2"><div class="fg"><label>Nom du coin / token</label><input type="text" id="f-name" placeholder="Bitcoin, Ethereum…" value="${v.name||''}"></div><div class="fg"><label>Symbole</label><input type="text" id="f-ticker" placeholder="BTC, ETH, SOL…" value="${v.ticker||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();autofillCgId()"></div></div>
+  <div class="fg"><label>CoinGecko ID <span style="color:var(--text-muted);font-weight:300">(pour le cours automatique)</span></label><input type="text" id="f-cgid" placeholder="bitcoin, ethereum, solana…" value="${cgId}" oninput="document.getElementById('cg-status').textContent=''"><div class="hint">Identifiant exact de <a href="https://www.coingecko.com" target="_blank">coingecko.com</a>. Renseigné automatiquement pour les coins courants. Vérifiez l'URL CoinGecko sinon : coingecko.com/en/coins/<strong>[ID]</strong>.</div><div class="ticker-result" id="cg-status">${cgId?'✓ ID détecté automatiquement':''}</div></div>
+  <div class="fg"><label>Exchange / Wallet</label><input type="text" id="f-exchange" placeholder="Binance, Ledger, Coinbase, Metamask…" value="${v.exchange||''}"></div>
+  <div class="fsec">Transaction</div>
+  <div class="fg" style="margin-bottom:14px">
+    <label>Devise de la transaction</label>
+    <div style="display:flex;gap:8px;margin-top:2px">
+      <button type="button" id="ccy-eur" onclick="setCryptoCcy('EUR')"
+        style="flex:1;padding:9px;border-radius:8px;border:1px solid ${txCcy==='EUR'?'var(--gold)':'var(--border)'};background:${txCcy==='EUR'?'var(--gold-dim)':'var(--surface2)'};color:${txCcy==='EUR'?'var(--gold)':'var(--text-dim)'};cursor:pointer;font-size:14px;font-family:var(--fb);transition:all .15s">
+        € Euro
+      </button>
+      <button type="button" id="ccy-usd" onclick="setCryptoCcy('USD')"
+        style="flex:1;padding:9px;border-radius:8px;border:1px solid ${txCcy==='USD'?'#38bdf8':'var(--border)'};background:${txCcy==='USD'?'rgba(56,189,248,.1)':'var(--surface2)'};color:${txCcy==='USD'?'#38bdf8':'var(--text-dim)'};cursor:pointer;font-size:14px;font-family:var(--fb);transition:all .15s">
+        $ Dollar
+      </button>
+    </div>
+    <input type="hidden" id="f-txccy" value="${txCcy}">
+    <div class="hint" style="margin-top:6px">
+      Les montants du lot (PRU, frais, P&L) seront affichés dans cette devise. Les totaux globaux restent toujours en €.<br>
+      <span style="color:var(--text-dim)">Taux EUR/USD utilisé : 1 € ≈ <span id="fx-display">${fxRate.toFixed(4)}</span> $</span>
+    </div>
+  </div>
+  <div class="fsec">Position</div>
+  <div class="fr3">
+    <div class="fg"><label>Quantité</label><input type="number" id="f-quantity" placeholder="0.5" step="any" value="${v.quantity||''}"></div>
+    <div class="fg"><label id="pru-label">${pruLabel}</label><input type="number" id="f-pru" placeholder="${pruPlaceholder}" step="0.01" value="${v.pru||''}"></div>
+    <div class="fg"><label id="fees-label">${feesLabel}</label><input type="number" id="f-fees" placeholder="0" step="0.01" value="${v.fees||''}"></div>
+  </div>
+  <div class="fg"><label>Date d'achat</label><input type="date" id="f-date" value="${v.date||new Date().toISOString().split('T')[0]}"></div>
+  <div class="fg"><label>Notes</label><input type="text" id="f-notes" placeholder="Staking, DeFi…" value="${v.notes||''}"></div>
+  <div class="info-box">💡 Le cours est récupéré en <strong>temps réel depuis CoinGecko</strong> (USD). La conversion EUR est automatique via le taux de change live.</div>`;}
+
+function setCryptoCcy(ccy){
+  document.getElementById('f-txccy').value=ccy;
+  const isUsd=ccy==='USD';
+  // Update buttons
+  const btnEur=document.getElementById('ccy-eur');
+  const btnUsd=document.getElementById('ccy-usd');
+  if(btnEur){btnEur.style.border='1px solid '+(isUsd?'var(--border)':'var(--gold)');btnEur.style.background=isUsd?'var(--surface2)':'var(--gold-dim)';btnEur.style.color=isUsd?'var(--text-dim)':'var(--gold)';}
+  if(btnUsd){btnUsd.style.border='1px solid '+(isUsd?'#38bdf8':'var(--border)');btnUsd.style.background=isUsd?'rgba(56,189,248,.1)':'var(--surface2)';btnUsd.style.color=isUsd?'#38bdf8':'var(--text-dim)';}
+  // Update labels
+  const pruLbl=document.getElementById('pru-label');
+  const feesLbl=document.getElementById('fees-label');
+  if(pruLbl)pruLbl.textContent=isUsd?'PRU ($ / unité)':'PRU (€ / unité)';
+  if(feesLbl)feesLbl.textContent=isUsd?'Frais ($)':'Frais (€)';
+}
+
+// ÉPARGNE
+function buildEpargneFields(a){const v=a||{};const st=v.subtype||'livreta';
+  return`<div class="fg"><label>Type</label><select id="f-subtype"><option value="livreta"${st==='livreta'?' selected':''}>Livret A</option><option value="ldds"${st==='ldds'?' selected':''}>LDDS</option><option value="lep"${st==='lep'?' selected':''}>LEP</option><option value="pel"${st==='pel'?' selected':''}>PEL</option><option value="cel"${st==='cel'?' selected':''}>CEL</option><option value="aveuros"${st==='aveuros'?' selected':''}>Assurance-vie (fonds €)</option><option value="compte"${st==='compte'?' selected':''}>Compte courant</option><option value="per"${st==='per'?' selected':''}>PER (fonds €)</option><option value="autre"${st==='autre'?' selected':''}>Autre</option></select></div>
+  <div class="fr2"><div class="fg"><label>Nom / Libellé</label><input type="text" id="f-name" placeholder="Livret A SG…" value="${v.name||''}"></div><div class="fg"><label>Banque</label><input type="text" id="f-bank" placeholder="Société Générale…" value="${v.bank||''}"></div></div>
+  <div class="fr2"><div class="fg"><label>Solde actuel (€)</label><input type="number" id="f-value" placeholder="10 000" step="0.01" value="${v.value||''}"></div><div class="fg"><label>Taux (%)</label><input type="number" id="f-rate" placeholder="3.0" step="0.01" value="${v.rate||''}"></div></div>
+  <div class="fr2"><div class="fg"><label>Plafond (€)</label><input type="number" id="f-ceiling" placeholder="22 950" value="${v.ceiling||''}"></div><div class="fg"><label>Date d'ouverture</label><input type="date" id="f-date" value="${v.date||''}"></div></div>
+  <div class="fg"><label>Notes</label><input type="text" id="f-notes" value="${v.notes||''}"></div>`;}
+
+// AUTRE
+function buildAutreFields(a){const v=a||{};const st=v.subtype||'vehicle';
+  return`<div class="fg"><label>Nom / Description</label><input type="text" id="f-name" placeholder="Tesla Model 3, Lingot d'or…" value="${v.name||''}"></div>
+  <div class="fg"><label>Catégorie</label><select id="f-subtype"><option value="vehicle"${st==='vehicle'?' selected':''}>🚗 Véhicule</option><option value="art"${st==='art'?' selected':''}>🎨 Art & Collections</option><option value="metals"${st==='metals'?' selected':''}>🥇 Métaux précieux</option><option value="jewelry"${st==='jewelry'?' selected':''}>💎 Bijoux</option><option value="pe"${st==='pe'?' selected':''}>📊 Private equity</option><option value="other"${st==='other'?' selected':''}>✦ Autre</option></select></div>
+  <div class="fr2"><div class="fg"><label>Valeur d'achat (€)</label><input type="number" id="f-invested" placeholder="45 000" value="${v.invested||''}"></div><div class="fg"><label>Valeur actuelle estimée (€)</label><input type="number" id="f-value" placeholder="28 000" value="${v.value||''}"></div></div>
+  <div class="fr2"><div class="fg"><label>Date d'acquisition</label><input type="date" id="f-date" value="${v.date||''}"></div><div class="fg"><label>Notes</label><input type="text" id="f-notes" placeholder="Kilométrage, état…" value="${v.notes||''}"></div></div>`;}
+
+function toggleImmoFields(){const st=document.getElementById('f-subtype').value;document.getElementById('fi-addr').style.display=st==='scpi'?'none':'block';document.getElementById('fi-scpi').style.display=st==='scpi'?'block':'none';document.getElementById('fi-locatif').style.display=st==='locatif'?'block':'none';}
+function autofillCgId(){const sym=(document.getElementById('f-ticker')?.value||'').toUpperCase();const id=CG_MAP[sym];const el=document.getElementById('f-cgid');if(el&&id&&!el.value){el.value=id;const st=document.getElementById('cg-status');if(st)st.textContent='✓ ID CoinGecko détecté automatiquement';}}
+
+// ════════════════════════════════════════════════════
+// SAVE ASSET
+// ════════════════════════════════════════════════════
+function saveAsset(){
+  const name=gv('f-name');if(!name){notify('Veuillez saisir un nom',false);return;}
+  const cat=currentModalCat;
+  const base={id:editingAssetId||Date.now().toString(),cat,name,date:gv('f-date'),notes:gv('f-notes'),updatedAt:new Date().toISOString()};
+  let asset={};
+  if(cat==='immo'){
+    const st=gv('f-subtype');const inv=gn('f-invested'),val=gn('f-value');
+    asset={...base,subtype:st,address:gv('f-address'),surface:gn('f-surface')||null,invested:inv,value:val,charges:gn('f-charges')||null,monthlyRent:st==='locatif'?gn('f-rent'):null,occupancy:st==='locatif'?gn('f-occ'):null};
+  } else if(cat==='bourse'){
+    const qty=gn('f-quantity'),pru=gn('f-pru'),fees=gn('f-fees'),ticker=gv('f-ticker');
+    asset={...base,type:gv('f-type'),enveloppe:gv('f-enveloppe'),ticker:ticker.toUpperCase(),quantity:qty,pru,fees,value:qty*(livePrices[ticker.toUpperCase()]||pru),invested:qty*pru+fees};
+  } else if(cat==='crypto'){
+    const qty=gn('f-quantity'),pru=gn('f-pru'),fees=gn('f-fees');
+    const ticker=gv('f-ticker').toUpperCase();
+    const cgId=gv('f-cgid').toLowerCase().trim()||(CG_MAP[ticker]||'');
+    const txCurrency=gv('f-txccy')||'EUR';
+    // Invested stored in EUR always
+    const investedEur=txCurrency==='USD'? usdToEur(qty*pru+fees) : qty*pru+fees;
+    // Live value in EUR
+    const liveUsd=livePrices[cgId]||livePrices[ticker]||0;
+    const valueEur=liveUsd>0? usdToEur(qty*liveUsd) : (txCurrency==='USD'? usdToEur(qty*pru) : qty*pru);
+    asset={...base,ticker,cgId,exchange:gv('f-exchange'),quantity:qty,pru,fees,txCurrency,value:valueEur,invested:investedEur};
+  } else if(cat==='epargne'){
+    const val=gn('f-value');
+    asset={...base,subtype:gv('f-subtype'),bank:gv('f-bank'),value:val,invested:val,rate:gn('f-rate')||null,ceiling:gn('f-ceiling')||null};
+  } else if(cat==='autre'){
+    asset={...base,subtype:gv('f-subtype'),invested:gn('f-invested'),value:gn('f-value')};
+  }
+  if(editingAssetId){const i=data.assets.findIndex(x=>x.id===editingAssetId);data.assets[i]=asset;addHistory('edit',asset);}
+  else{data.assets.push(asset);addHistory('add',asset);}
+  save();closeModal('asset');renderAll();notify('Actif enregistré ✓',true);
+  // Fetch prices for new asset
+  if(cat==='bourse'||cat==='crypto')refreshAllPrices();
+}
+function deleteAsset(id){if(!confirm('Supprimer ?'))return;const a=data.assets.find(x=>x.id===id);data.assets=data.assets.filter(x=>x.id!==id);addHistory('delete',a);save();renderAll();}
+
+// ════════════════════════════════════════════════════
+// DETTE
+// ════════════════════════════════════════════════════
+function openAddDette(){editingDetteId=null;document.getElementById('modal-dette-title').textContent='Nouvelle dette';['dn','dr','di','drate','dm','de'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});document.getElementById('dt').value='immo';document.getElementById('modal-dette').classList.add('open');}
+function editDette(id){const d=data.dettes.find(x=>x.id===id);if(!d)return;editingDetteId=id;document.getElementById('modal-dette-title').textContent='Modifier';document.getElementById('dn').value=d.name;document.getElementById('dt').value=d.type;document.getElementById('dr').value=d.remaining;document.getElementById('di').value=d.initial||'';document.getElementById('drate').value=d.rate||'';document.getElementById('dm').value=d.monthly||'';document.getElementById('de').value=d.end||'';document.getElementById('modal-dette').classList.add('open');}
+function saveDette(){const name=document.getElementById('dn').value.trim();if(!name){notify('Veuillez saisir un nom',false);return;}const dette={id:editingDetteId||Date.now().toString(),name,type:document.getElementById('dt').value,remaining:pv(document.getElementById('dr').value),initial:pv(document.getElementById('di').value),rate:pv(document.getElementById('drate').value),monthly:pv(document.getElementById('dm').value),end:document.getElementById('de').value,updatedAt:new Date().toISOString()};if(editingDetteId){const i=data.dettes.findIndex(x=>x.id===editingDetteId);data.dettes[i]=dette;}else{data.dettes.push(dette);addHistory('add-dette',dette);}save();closeModal('dette');renderAll();notify('Dette enregistrée ✓',true);}
+function deleteDette(id){if(!confirm('Supprimer ?'))return;data.dettes=data.dettes.filter(x=>x.id!==id);save();renderAll();}
+function addHistory(action,item){data.history.unshift({action,name:item.name,cat:item.cat||item.type,value:item.value||item.remaining,date:new Date().toISOString()});if(data.history.length>100)data.history.pop();}
+
+// ════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ════════════════════════════════════════════════════
+function exportData(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='patrimoine_'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);notify('Export réussi ✓',true);}
+function importData(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const imp=JSON.parse(e.target.result);if(!imp.assets||!imp.dettes)throw new Error();data={assets:[],dettes:[],history:[],snapshots:[],...imp};save();renderAll();notify(`Import — ${data.assets.length} actifs`,true);refreshAllPrices();}catch{notify('Fichier invalide',false);}};reader.readAsText(file);event.target.value='';}
+function notify(msg,success){const el=document.getElementById('notif');el.textContent=msg;el.className='notif show'+(success?' success':'');setTimeout(()=>el.className='notif',4000);}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
+
+// ════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════
+loadData();
+autoSnapshot();
+renderAll();
+// Fetch live prices on load
+const hasMarket=data.assets.some(a=>a.cat==='bourse'||a.cat==='crypto');
+if(hasMarket){refreshAllPrices();}
+</script>
+</body>
+</html>
