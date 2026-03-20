@@ -195,6 +195,26 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
 /* LAST UPDATE chip */
 .update-chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:10px;font-family:var(--fm);color:var(--text-dim)}
 .update-chip.fresh{border-color:rgba(76,175,125,.3);color:var(--green)}
+
+/* BROKER / WALLET CHIPS */
+.broker-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.broker-chip{padding:5px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;font-size:11px;font-family:var(--fm);color:var(--text-dim);cursor:pointer;transition:all .15s;white-space:nowrap}
+.broker-chip:hover{border-color:var(--gold);color:var(--gold)}
+.broker-chip.active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+/* ISIN TOGGLE */
+.isin-toggle{display:flex;gap:0;margin-bottom:8px;border-radius:7px;overflow:hidden;border:1px solid var(--border)}
+.isin-toggle button{flex:1;padding:7px;background:var(--surface2);border:none;font-size:11px;font-family:var(--fm);color:var(--text-dim);cursor:pointer;transition:all .15s}
+.isin-toggle button.active{background:var(--surface);color:var(--gold)}
+.isin-resolve{font-size:11px;font-family:var(--fm);margin-top:4px;min-height:15px}
+.isin-resolve.ok{color:var(--green)}.isin-resolve.err{color:var(--red)}.isin-resolve.loading{color:var(--gold)}
+/* SEARCH BAR */
+.cat-search{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.cat-search input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 14px 9px 36px;color:var(--text);font-size:13px;font-family:var(--fb);outline:none;transition:border-color .15s}
+.cat-search input:focus{border-color:var(--gold)}
+.cat-search input::placeholder{color:var(--text-muted)}
+.cat-search-wrap{position:relative;flex:1}
+.cat-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none}
+.cat-search-count{font-size:11px;font-family:var(--fm);color:var(--text-dim);white-space:nowrap}
 </style>
 </head>
 <body>
@@ -221,7 +241,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
     <button onclick="document.getElementById('importFile').click()">⬆ Import</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
   </div>
-  <div style="padding:10px 24px 16px;font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.0</div>
+  <div style="padding:10px 24px 16px;font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.1</div>
 </aside>
 
 <main class="main">
@@ -322,6 +342,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
       </div>
     </div>
     <div id="bourse-kpi" class="kpi-row kpi-4" style="margin-bottom:20px"></div>
+    <div id="bourse-search-area"></div>
     <div class="panel" style="margin-bottom:0">
       <div class="sec-tabs">
         <button class="sec-tab active" onclick="switchSecTab('bourse','consolide',this)">Vue consolidée</button>
@@ -347,6 +368,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
       </div>
     </div>
     <div id="crypto-kpi" class="kpi-row kpi-4" style="margin-bottom:20px"></div>
+    <div id="crypto-search-area"></div>
     <div class="panel" style="margin-bottom:0">
       <div class="sec-tabs">
         <button class="sec-tab active" onclick="switchSecTab('crypto','consolide',this)">Vue consolidée</button>
@@ -749,6 +771,97 @@ function updatePriceStatus(state){
   btns.forEach(b=>{b.className=btnClass;});
 }
 
+
+// ════════════════════════════════════════════════════
+// SEARCH STATE (per category)
+// ════════════════════════════════════════════════════
+const catSearch={immo:'',bourse:'',crypto:'',epargne:'',autre:''};
+function setCatSearch(cat,val){catSearch[cat]=val.toLowerCase();renderAll();}
+function searchBar(cat,totalCount,filteredCount){
+  const q=catSearch[cat]||'';
+  const countHtml=q?`<span class="cat-search-count">${filteredCount} / ${totalCount} résultat${filteredCount>1?'s':''}</span>`:`<span class="cat-search-count">${totalCount} actif${totalCount>1?'s':''}</span>`;
+  return`<div class="cat-search">
+    <div class="cat-search-wrap">
+      <span class="cat-search-icon">⌕</span>
+      <input type="text" placeholder="Rechercher un actif…" value="${q.replace(/"/g,'&quot;')}" oninput="setCatSearch('${cat}',this.value)" id="search-${cat}">
+    </div>
+    ${countHtml}
+  </div>`;
+}
+function filterBySearch(assets,cat){
+  const q=catSearch[cat]||'';
+  if(!q)return assets;
+  return assets.filter(a=>{
+    const hay=(a.name||'')+(a.ticker||'')+(a.broker||'')+(a.exchange||'')+(a.subtype||'')+(a.bank||'');
+    return hay.toLowerCase().includes(q);
+  });
+}
+
+// ════════════════════════════════════════════════════
+// ISIN → TICKER RESOLUTION
+// ════════════════════════════════════════════════════
+async function resolveIsin(isin){
+  const el=document.getElementById('isin-status');
+  if(!isin||isin.length<12){if(el)el.textContent='';return;}
+  if(el){el.className='isin-resolve loading';el.textContent='Résolution…';}
+  const url=`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(isin)}&quotesCount=5&newsCount=0&enableFuzzyQuery=false`;
+  const proxy=`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  const proxy2=`https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+  for(const src of [url,proxy,proxy2]){
+    try{
+      const r=await fetch(src,{signal:AbortSignal.timeout(8000)});
+      if(!r.ok)throw 0;
+      const j=await r.json();
+      const quotes=(j?.quotes||[]).filter(q=>q.symbol&&q.quoteType&&['EQUITY','ETF','MUTUALFUND','FUND'].includes(q.quoteType));
+      if(quotes.length){
+        const best=quotes[0];
+        const ticker=best.symbol;
+        const name=best.longname||best.shortname||'';
+        // Fill in the ticker field
+        const tf=document.getElementById('f-ticker');
+        if(tf){tf.value=ticker;}
+        // Auto-fill name if empty
+        const nf=document.getElementById('f-name');
+        if(nf&&!nf.value&&name)nf.value=name;
+        if(el){el.className='isin-resolve ok';el.textContent=`✓ Ticker résolu : ${ticker}${name?' — '+name:''}`;}
+        return;
+      }
+      if(el){el.className='isin-resolve err';el.textContent='ISIN non trouvé sur Yahoo Finance';}
+      return;
+    }catch(e){}
+  }
+  if(el){el.className='isin-resolve err';el.textContent='Erreur réseau';}
+}
+
+let bourseInputMode='ticker'; // 'ticker' or 'isin'
+function setBourseInputMode(mode){
+  bourseInputMode=mode;
+  const tickerWrap=document.getElementById('bourse-ticker-wrap');
+  const isinWrap=document.getElementById('bourse-isin-wrap');
+  const btnT=document.getElementById('bm-ticker');
+  const btnI=document.getElementById('bm-isin');
+  if(tickerWrap)tickerWrap.style.display=mode==='ticker'?'block':'none';
+  if(isinWrap)isinWrap.style.display=mode==='isin'?'block':'none';
+  if(btnT){btnT.classList.toggle('active',mode==='ticker');}
+  if(btnI){btnI.classList.toggle('active',mode==='isin');}
+}
+function setBrokerChip(val){
+  const inp=document.getElementById('f-broker');
+  if(!inp)return;
+  inp.value=val;
+  document.querySelectorAll('.broker-chip').forEach(c=>{
+    c.classList.toggle('active',c.dataset.val===val);
+  });
+}
+function setWalletChip(val){
+  const inp=document.getElementById('f-exchange');
+  if(!inp)return;
+  inp.value=val;
+  document.querySelectorAll('.wallet-chip').forEach(c=>{
+    c.classList.toggle('active',c.dataset.val===val);
+  });
+}
+
 // ════════════════════════════════════════════════════
 // SNAPSHOTS
 // ════════════════════════════════════════════════════
@@ -857,15 +970,16 @@ function priceCell(a){
 // ════════════════════════════════════════════════════
 function getConsolidated(cat){
   const byKey={};
-  for(const a of data.assets.filter(x=>x.cat===cat)){
+  for(const a of (filteredAssets||data.assets.filter(x=>x.cat===cat))){
     const key=(a.ticker||a.name).toUpperCase();
-    if(!byKey[key])byKey[key]={name:a.name,ticker:a.ticker||'',envelopes:new Set(),totalQty:0,totalInvested:0,lots:[],cgId:a.cgId,exchange:a.exchange};
+    if(!byKey[key])byKey[key]={name:a.name,ticker:a.ticker||'',envelopes:new Set(),brokers:new Set(),totalQty:0,totalInvested:0,lots:[],cgId:a.cgId,exchange:a.exchange};
     const g=byKey[key];
     const qty=a.quantity||0,pru=a.pru||0,fees=a.fees||0;
     g.totalQty+=qty;g.totalInvested+=qty*pru+fees;
     if(a.enveloppe)g.envelopes.add(a.enveloppe);
     if(a.exchange)g.envelopes.add(a.exchange);
     if(a.cgId&&!g.cgId)g.cgId=a.cgId;
+    if(a.broker)g.brokers.add(a.broker);
     g.lots.push(a);
   }
   return Object.values(byKey).map(g=>{
@@ -885,13 +999,16 @@ function getConsolidated(cat){
   }).sort((a,b)=>b.totalValue-a.totalValue);
 }
 
-function renderConsolidatedTable(cat){
-  const groups=getConsolidated(cat);
+function renderConsolidatedTable(cat,filteredAssets){
+  // If filteredAssets provided, only show matching tickers
+  const filterTickers=filteredAssets?new Set(filteredAssets.map(a=>(a.ticker||a.name).toUpperCase())):null;
+  const groups=getConsolidated(cat).filter(g=>!filterTickers||filterTickers.has(g.ticker.toUpperCase())||filteredAssets.some(a=>a.name===g.name));
   const totalVal=groups.reduce((s,g)=>s+g.totalValue,0);
   if(!groups.length)return`<div class="empty"><div class="empty-icon">${CATS[cat].icon}</div><div class="empty-text">Aucune position enregistrée.</div></div>`;
   const isBourse=cat==='bourse';const col=CATS[cat].color;
   let h=`<div class="table-wrap"><table><thead><tr>
     <th>Actif</th><th>${isBourse?'Enveloppe':'Plateforme'}</th>
+    ${isBourse?'<th>Broker(s)</th>':''}
     <th class="th-r">Quantité</th><th class="th-r">PRU moy.</th>
     <th class="th-r">Cours <span style="color:var(--green);font-family:var(--fm)">●</span></th>
     <th class="th-r">Valeur</th><th class="th-r">+/- val.</th><th class="th-r">+/- %</th><th class="th-r">Poids</th>
@@ -899,6 +1016,7 @@ function renderConsolidatedTable(cat){
   for(const g of groups){
     const poids=totalVal>0?(g.totalValue/totalVal*100):0;
     const plCl=g.pl>=0?'var(--green)':'var(--red)';
+    const brokerStr=isBourse&&g.brokers.size?[...g.brokers].join(', '):'—';
     const envs=[...g.envelopes].map(e=>isBourse?`<span class="env-pill" style="background:${ENV_COLORS[e]||'rgba(255,255,255,.05)'};color:${ENV_TEXT[e]||'var(--text-dim)'}">${ENV_LABELS[e]||e}</span>`:`<span class="badge" style="background:#f7931a18;color:var(--crypto)">${e}</span>`).join(' ');
     const coursHtml=g.isLive
       ?`<div class="price-live"><div class="price-live-dot"></div>${fmtLivePrice(g._mockAsset,g.currentPrice)}</div>`
@@ -907,6 +1025,7 @@ function renderConsolidatedTable(cat){
     h+=`<tr class="clickable">
       <td><div style="font-size:13px">${g.name}</div>${g.ticker?`<div style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">${g.ticker}${g.cgId&&!isBourse?` <span style="color:var(--text-muted)">· ${g.cgId}</span>`:''}${g.hasError?` <span style="color:var(--red);font-size:10px">⚠ Non trouvé</span>`:''}</div>`:''}</td>
       <td>${envs||'—'}</td>
+      ${isBourse?`<td style="font-size:11px;color:var(--text-dim)">${brokerStr}</td>`:''}
       <td class="td-r">${fmtQ(g.totalQty)}</td>
       <td class="td-r">${g.pruMoyen>0?fmtDec(g.pruMoyen):'—'}</td>
       <td class="td-r">${coursHtml}</td>
@@ -936,8 +1055,8 @@ function renderConsolidatedTable(cat){
   return h;
 }
 
-function renderLotsTable(cat){
-  const assets=data.assets.filter(a=>a.cat===cat).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+function renderLotsTable(cat,filteredAssets){
+  const assets=(filteredAssets||data.assets.filter(a=>a.cat===cat)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   if(!assets.length)return`<div class="empty"><div class="empty-icon">${CATS[cat].icon}</div><div class="empty-text">Aucune position.</div></div>`;
   const isBourse=cat==='bourse';
   const isCrypto=cat==='crypto';
@@ -945,6 +1064,7 @@ function renderLotsTable(cat){
   const txHeader=isCrypto?'<th>Devise</th>':'';
   let h=`<div class="table-wrap"><table><thead><tr>
     <th>Date achat</th><th>Actif</th><th>${isBourse?'Enveloppe':'Plateforme'}</th>
+    ${isBourse?'<th>Broker</th>':''}
     ${txHeader}
     <th class="th-r">Qté</th><th class="th-r">PRU lot</th>
     <th class="th-r">Cours live</th>
@@ -993,6 +1113,7 @@ function renderLotsTable(cat){
         <td class="td-mono" style="font-size:11px;color:var(--text-dim);white-space:nowrap">${a.date?new Date(a.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'—'}</td>
         <td><div style="font-size:13px">${a.name}</div>${a.ticker?`<span style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">${a.ticker}</span>`:''}</td>
         <td>${envHtml}</td>
+        <td style="font-size:11px;color:var(--text-dim)">${a.broker||'—'}</td>
         <td class="td-r">${a.quantity!=null?fmtQ(a.quantity):'—'}</td>
         <td class="td-r">${a.pru>0?fmtDec(a.pru):'—'}</td>
         <td class="td-r">${priceCell(a)}</td>
@@ -1045,11 +1166,13 @@ function renderAll(){
 // ── IMMO ────────────────────────────────────────────
 function renderImmo(stats,totalBrut){
   const el=document.getElementById('section-immo');
-  const assets=data.assets.filter(a=>a.cat==='immo').sort((a,b)=>assetValue(b)-assetValue(a));
+  const allImmo=data.assets.filter(a=>a.cat==='immo').sort((a,b)=>assetValue(b)-assetValue(a));
+  const assets=filterBySearch(allImmo,'immo');
   const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
   const pl=stats.invested>0?stats.value-stats.invested:null,plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
   const SLAB={rp:'Résidence principale',rs:'Résidence secondaire',locatif:'Locatif',scpi:'SCPI'};
-  el.innerHTML=`<div class="cat-header"><div class="cat-icon-big" style="background:#6e8efb22">🏠</div><div><div class="cat-title-big" style="color:var(--immo)">Immobilier</div><div class="topbar-date">${assets.length} bien${assets.length!==1?'s':''}</div></div><button class="btn btn-gold ml-auto" onclick="openAddAsset('immo')">+ Ajouter</button></div>
+  el.innerHTML=`<div class="cat-header"><div class="cat-icon-big" style="background:#6e8efb22">🏠</div><div><div class="cat-title-big" style="color:var(--immo)">Immobilier</div><div class="topbar-date">${allImmo.length} bien${allImmo.length!==1?'s':''}</div></div><button class="btn btn-gold ml-auto" onclick="openAddAsset('immo')">+ Ajouter</button></div>
+  ${searchBar('immo',allImmo.length,assets.length)}
   <div class="kpi-row kpi-4" style="margin-bottom:20px"><div class="kpi-card"><div class="kpi-label">Valeur marché</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Prix d'achat</div><div class="kpi-value" style="font-size:26px;color:var(--text-dim)">${stats.invested>0?fmt(stats.invested):'—'}</div></div><div class="kpi-card"><div class="kpi-label">Plus-value latente</div><div class="kpi-value" style="font-size:26px;color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}</div>${plP!==null?`<div class="kpi-delta ${plP>=0?'pos':'neg'}">${fmtPct(plP)}</div>`:''}</div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div></div>
   <div class="panel"><div class="panel-header"><span class="panel-title">🏠 Biens</span></div><div class="panel-body">
   ${!assets.length?`<div class="empty"><div class="empty-icon">🏠</div><div class="empty-text">Aucun bien enregistré.</div></div>`:
@@ -1062,27 +1185,38 @@ function renderImmo(stats,totalBrut){
 function renderBourse(stats,totalBrut){
   const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
   const pl=stats.invested>0?stats.value-stats.invested:null,plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
+  const allB=data.assets.filter(a=>a.cat==='bourse');
+  const filteredB=filterBySearch(allB,'bourse');
   document.getElementById('bourse-kpi').innerHTML=`<div class="kpi-card"><div class="kpi-label">Valeur portefeuille</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Investi</div><div class="kpi-value" style="font-size:26px;color:var(--text-dim)">${stats.invested>0?fmt(stats.invested):'—'}</div></div><div class="kpi-card"><div class="kpi-label">+/- value</div><div class="kpi-value" style="font-size:26px;color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}</div>${plP!==null?`<div class="kpi-delta ${plP>=0?'pos':'neg'}">${fmtPct(plP)}</div>`:''}</div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div>`;
-  document.getElementById('bourse-tab-consolide').innerHTML=renderConsolidatedTable('bourse');
-  document.getElementById('bourse-tab-lots').innerHTML=renderLotsTable('bourse');
+  // Inject search above tabs
+  const sEl=document.getElementById('bourse-search-area');
+  if(sEl)sEl.innerHTML=searchBar('bourse',allB.length,filteredB.length);
+  document.getElementById('bourse-tab-consolide').innerHTML=renderConsolidatedTable('bourse',filteredB);
+  document.getElementById('bourse-tab-lots').innerHTML=renderLotsTable('bourse',filteredB);
 }
 
 // ── CRYPTO ──────────────────────────────────────────
 function renderCrypto(stats,totalBrut){
   const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
   const pl=stats.invested>0?stats.value-stats.invested:null,plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
+  const allC=data.assets.filter(a=>a.cat==='crypto');
+  const filteredC=filterBySearch(allC,'crypto');
   document.getElementById('crypto-kpi').innerHTML=`<div class="kpi-card"><div class="kpi-label">Valeur portefeuille</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Investi</div><div class="kpi-value" style="font-size:26px;color:var(--text-dim)">${stats.invested>0?fmt(stats.invested):'—'}</div></div><div class="kpi-card"><div class="kpi-label">+/- value</div><div class="kpi-value" style="font-size:26px;color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}</div>${plP!==null?`<div class="kpi-delta ${plP>=0?'pos':'neg'}">${fmtPct(plP)}</div>`:''}</div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div>`;
-  document.getElementById('crypto-tab-consolide').innerHTML=renderConsolidatedTable('crypto');
-  document.getElementById('crypto-tab-lots').innerHTML=renderLotsTable('crypto');
+  const sEl=document.getElementById('crypto-search-area');
+  if(sEl)sEl.innerHTML=searchBar('crypto',allC.length,filteredC.length);
+  document.getElementById('crypto-tab-consolide').innerHTML=renderConsolidatedTable('crypto',filteredC);
+  document.getElementById('crypto-tab-lots').innerHTML=renderLotsTable('crypto',filteredC);
 }
 
 // ── ÉPARGNE ─────────────────────────────────────────
 function renderEpargne(stats,totalBrut){
   const el=document.getElementById('section-epargne');
-  const assets=data.assets.filter(a=>a.cat==='epargne').sort((a,b)=>assetValue(b)-assetValue(a));
+  const allEp=data.assets.filter(a=>a.cat==='epargne').sort((a,b)=>assetValue(b)-assetValue(a));
+  const assets=filterBySearch(allEp,'epargne');
   const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
   const ELAB={livreta:'Livret A',ldds:'LDDS',lep:'LEP',pel:'PEL',cel:'CEL',aveuros:'Assur.-vie €',compte:'Compte',per:'PER',autre:'Autre'};
-  el.innerHTML=`<div class="cat-header"><div class="cat-icon-big" style="background:#c9a84c22">🏦</div><div><div class="cat-title-big" style="color:var(--epargne)">Épargne</div><div class="topbar-date">${assets.length} compte${assets.length!==1?'s':''}</div></div><button class="btn btn-gold ml-auto" onclick="openAddAsset('epargne')">+ Ajouter</button></div>
+  el.innerHTML=`<div class="cat-header"><div class="cat-icon-big" style="background:#c9a84c22">🏦</div><div><div class="cat-title-big" style="color:var(--epargne)">Épargne</div><div class="topbar-date">${allEp.length} compte${allEp.length!==1?'s':''}</div></div><button class="btn btn-gold ml-auto" onclick="openAddAsset('epargne')">+ Ajouter</button></div>
+  ${searchBar('epargne',allEp.length,assets.length)}
   <div class="kpi-row kpi-3" style="margin-bottom:20px"><div class="kpi-card"><div class="kpi-label">Total épargne</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div><div class="kpi-card"><div class="kpi-label">Nb comptes</div><div class="kpi-value" style="font-size:26px">${assets.length}</div></div></div>
   <div class="panel"><div class="panel-header"><span class="panel-title">🏦 Comptes & livrets</span></div><div class="panel-body">
   ${!assets.length?`<div class="empty"><div class="empty-icon">🏦</div><div class="empty-text">Aucun compte.</div></div>`:
@@ -1095,11 +1229,13 @@ function renderEpargne(stats,totalBrut){
 // ── AUTRE ────────────────────────────────────────────
 function renderAutre(stats,totalBrut){
   const el=document.getElementById('section-autre');
-  const assets=data.assets.filter(a=>a.cat==='autre').sort((a,b)=>assetValue(b)-assetValue(a));
+  const allAu=data.assets.filter(a=>a.cat==='autre').sort((a,b)=>assetValue(b)-assetValue(a));
+  const assets=filterBySearch(allAu,'autre');
   const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
   const pl=stats.invested>0?stats.value-stats.invested:null,plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
   const ALAB={vehicle:'Véhicule',art:'Art & Collections',metals:'Métaux précieux',jewelry:'Bijoux',pe:'Private equity',other:'Autre'};
   el.innerHTML=`<div class="cat-header"><div class="cat-icon-big" style="background:#a855f722">✦</div><div><div class="cat-title-big" style="color:var(--autre)">Autres actifs</div><div class="topbar-date">Métaux, art, véhicules, PE…</div></div><button class="btn btn-gold ml-auto" onclick="openAddAsset('autre')">+ Ajouter</button></div>
+  ${searchBar('autre',allAu.length,assets.length)}
   <div class="kpi-row kpi-4" style="margin-bottom:20px"><div class="kpi-card"><div class="kpi-label">Valeur totale</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Investi</div><div class="kpi-value" style="font-size:26px;color:var(--text-dim)">${stats.invested>0?fmt(stats.invested):'—'}</div></div><div class="kpi-card"><div class="kpi-label">+/- value</div><div class="kpi-value" style="font-size:26px;color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}</div>${plP!==null?`<div class="kpi-delta ${plP>=0?'pos':'neg'}">${fmtPct(plP)}</div>`:''}</div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div></div>
   <div class="panel"><div class="panel-header"><span class="panel-title">✦ Inventaire</span></div><div class="panel-body">
   ${!assets.length?`<div class="empty"><div class="empty-icon">✦</div><div class="empty-text">Aucun actif.</div></div>`:
@@ -1174,13 +1310,39 @@ function buildImmoFields(a){const v=a||{};const st=v.subtype||'rp';
 
 // BOURSE
 function buildBourseFields(a){const v=a||{};const tp=v.type||'etf',env=v.enveloppe||'cto';
+  const broker=v.broker||'';
+  const DEFAULT_BROKERS=['Interactive Brokers','Trade Republic'];
+  const chipsBroker=DEFAULT_BROKERS.map(b=>`<button type="button" class="broker-chip${broker===b?' active':''}" data-val="${b}" onclick="setBrokerChip('${b}')">${b}</button>`).join('');
+  // Ticker vs ISIN toggle — default to 'ticker' mode, or 'isin' if no ticker set
+  const initMode=v.isin&&!v.ticker?'isin':'ticker';
   return`<div class="fr2"><div class="fg"><label>Type d'actif</label><select id="f-type"><option value="action"${tp==='action'?' selected':''}>Action</option><option value="etf"${tp==='etf'?' selected':''}>ETF</option><option value="opcvm"${tp==='opcvm'?' selected':''}>OPCVM / Fonds</option><option value="obligation"${tp==='obligation'?' selected':''}>Obligation</option><option value="autre"${tp==='autre'?' selected':''}>Autre</option></select></div><div class="fg"><label>Enveloppe</label><select id="f-enveloppe"><option value="pea"${env==='pea'?' selected':''}>PEA</option><option value="cto"${env==='cto'?' selected':''}>CTO</option><option value="av"${env==='av'?' selected':''}>Assurance-vie</option><option value="per"${env==='per'?' selected':''}>PER</option></select></div></div>
-  <div class="fr2"><div class="fg"><label>Nom / Libellé</label><input type="text" id="f-name" placeholder="Amundi MSCI World, Apple Inc…" value="${v.name||''}"></div><div class="fg"><label>Ticker Yahoo Finance</label><input type="text" id="f-ticker" placeholder="CW8.PA, AAPL, MC.PA…" value="${v.ticker||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><div class="hint">Ticker exact de Yahoo Finance. Euronext Paris : <strong>MC.PA</strong>, <strong>BNP.PA</strong>. US : <strong>AAPL</strong>. ETF Amundi : <strong>CW8.PA</strong>.</div></div></div>
+  <div class="fg"><label>Nom / Libellé</label><input type="text" id="f-name" placeholder="Amundi MSCI World, Apple Inc…" value="${v.name||''}"></div>
+  <div class="fg">
+    <label>Identifiant</label>
+    <div class="isin-toggle">
+      <button type="button" id="bm-ticker" class="${initMode==='ticker'?'active':''}" onclick="setBourseInputMode('ticker')">Ticker</button>
+      <button type="button" id="bm-isin" class="${initMode==='isin'?'active':''}" onclick="setBourseInputMode('isin')">ISIN</button>
+    </div>
+    <div id="bourse-ticker-wrap" style="display:${initMode==='ticker'?'block':'none'}">
+      <input type="text" id="f-ticker" placeholder="CW8.PA, AAPL, LOCK.L…" value="${v.ticker||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      <div class="hint">Yahoo Finance. Paris: <strong>MC.PA</strong>, <strong>BNP.PA</strong>. US: <strong>AAPL</strong>, <strong>NVDA</strong>. Londres: <strong>LOCK.L</strong>. Xetra: <strong>L0CK.DE</strong>.</div>
+    </div>
+    <div id="bourse-isin-wrap" style="display:${initMode==='isin'?'block':'none'}">
+      <input type="text" id="f-isin" placeholder="IE00BG0J4C88…" value="${v.isin||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();if(this.value.length>=12)resolveIsin(this.value)">
+      <div class="isin-resolve" id="isin-status">${v.ticker&&v.isin?'✓ Ticker résolu : '+v.ticker:''}</div>
+      <input type="hidden" id="f-ticker" value="${v.ticker||''}">
+    </div>
+  </div>
+  <div class="fg">
+    <label>Broker</label>
+    <input type="text" id="f-broker" placeholder="Interactive Brokers, Trade Republic…" value="${broker}" oninput="document.querySelectorAll('.broker-chip').forEach(c=>c.classList.toggle('active',c.dataset.val===this.value))">
+    <div class="broker-chips">${chipsBroker}</div>
+  </div>
   <div class="fsec">Lot acheté</div>
   <div class="fr3"><div class="fg"><label>Nombre de titres</label><input type="number" id="f-quantity" placeholder="10" step="0.001" value="${v.quantity||''}"></div><div class="fg"><label>PRU (€ / titre)</label><input type="number" id="f-pru" placeholder="42.50" step="0.0001" value="${v.pru||''}"></div><div class="fg"><label>Frais (€)</label><input type="number" id="f-fees" placeholder="2.50" step="0.01" value="${v.fees||''}"></div></div>
   <div class="fg"><label>Date d'acquisition</label><input type="date" id="f-date" value="${v.date||new Date().toISOString().split('T')[0]}"></div>
-  <div class="fg"><label>Notes</label><input type="text" id="f-notes" placeholder="Broker, stratégie…" value="${v.notes||''}"></div>
-  <div class="info-box">💡 Le cours sera récupéré automatiquement depuis <strong>Yahoo Finance</strong> via le ticker renseigné. Les prix hors EUR (USD, GBP…) sont affichés dans leur devise d'origine — pensez à en tenir compte.</div>`;}
+  <div class="fg"><label>Notes</label><input type="text" id="f-notes" placeholder="Stratégie, remarques…" value="${v.notes||''}"></div>
+  <div class="info-box">💡 Le cours est récupéré via <strong>Yahoo Finance</strong>. En mode ISIN, le ticker est résolu automatiquement. Seul le ticker est affiché dans les tableaux.</div>`;}
 
 // CRYPTO
 function buildCryptoFields(a){const v=a||{};
@@ -1193,7 +1355,11 @@ function buildCryptoFields(a){const v=a||{};
   const pruPlaceholder=txCcy==='USD'?'42 000':'38 500';
   return`<div class="fr2"><div class="fg"><label>Nom du coin / token</label><input type="text" id="f-name" placeholder="Bitcoin, Ethereum…" value="${v.name||''}"></div><div class="fg"><label>Symbole</label><input type="text" id="f-ticker" placeholder="BTC, ETH, SOL…" value="${v.ticker||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();autofillCgId()"></div></div>
   <div class="fg"><label>CoinGecko ID <span style="color:var(--text-muted);font-weight:300">(pour le cours automatique)</span></label><input type="text" id="f-cgid" placeholder="bitcoin, ethereum, solana…" value="${cgId}" oninput="document.getElementById('cg-status').textContent=''"><div class="hint">Identifiant exact de <a href="https://www.coingecko.com" target="_blank">coingecko.com</a>. Renseigné automatiquement pour les coins courants. Vérifiez l'URL CoinGecko sinon : coingecko.com/en/coins/<strong>[ID]</strong>.</div><div class="ticker-result" id="cg-status">${cgId?'✓ ID détecté automatiquement':''}</div></div>
-  <div class="fg"><label>Exchange / Wallet</label><input type="text" id="f-exchange" placeholder="Binance, Ledger, Coinbase, Metamask…" value="${v.exchange||''}"></div>
+  <div class="fg">
+    <label>Exchange / Wallet</label>
+    <input type="text" id="f-exchange" placeholder="Coinbase, Bitvavo, Ledger…" value="${v.exchange||''}" oninput="document.querySelectorAll('.wallet-chip').forEach(c=>c.classList.toggle('active',c.dataset.val===this.value))">
+    <div class="broker-chips">${['Coinbase','Bitvavo'].map(w=>`<button type="button" class="broker-chip wallet-chip${(v.exchange||''===w)?' active':''}" data-val="${w}" onclick="setWalletChip('${w}')">${w}</button>`).join('')}</div>
+  </div></div>
   <div class="fsec">Transaction</div>
   <div class="fg" style="margin-bottom:14px">
     <label>Devise de la transaction</label>
@@ -1268,8 +1434,11 @@ function saveAsset(){
     const st=gv('f-subtype');const inv=gn('f-invested'),val=gn('f-value');
     asset={...base,subtype:st,address:gv('f-address'),surface:gn('f-surface')||null,invested:inv,value:val,charges:gn('f-charges')||null,monthlyRent:st==='locatif'?gn('f-rent'):null,occupancy:st==='locatif'?gn('f-occ'):null};
   } else if(cat==='bourse'){
-    const qty=gn('f-quantity'),pru=gn('f-pru'),fees=gn('f-fees'),ticker=gv('f-ticker');
-    asset={...base,type:gv('f-type'),enveloppe:gv('f-enveloppe'),ticker:ticker.toUpperCase(),quantity:qty,pru,fees,value:qty*(livePrices[ticker.toUpperCase()]||pru),invested:qty*pru+fees};
+    const qty=gn('f-quantity'),pru=gn('f-pru'),fees=gn('f-fees');
+    const ticker=(gv('f-ticker')||'').toUpperCase();
+    const isin=(gv('f-isin')||'').toUpperCase()||null;
+    const broker=gv('f-broker')||null;
+    asset={...base,type:gv('f-type'),enveloppe:gv('f-enveloppe'),ticker,isin,broker,quantity:qty,pru,fees,value:qty*(livePrices[ticker]||pru),invested:qty*pru+fees};
   } else if(cat==='crypto'){
     const qty=gn('f-quantity'),pru=gn('f-pru'),fees=gn('f-fees');
     const ticker=gv('f-ticker').toUpperCase();
