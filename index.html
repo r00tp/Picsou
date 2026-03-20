@@ -241,7 +241,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
     <button onclick="document.getElementById('importFile').click()">⬆ Import</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
   </div>
-  <div style="padding:10px 24px 16px;font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.1</div>
+  <div style="padding:10px 24px 16px;font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.2</div>
 </aside>
 
 <main class="main">
@@ -818,8 +818,11 @@ async function resolveIsin(isin){
         const ticker=best.symbol;
         const name=best.longname||best.shortname||'';
         // Fill in the ticker field
-        const tf=document.getElementById('f-ticker');
-        if(tf){tf.value=ticker;}
+        // Fill visible ticker field OR hidden one depending on current mode
+        const tfVis=document.getElementById('f-ticker');
+        const tfHid=document.getElementById('f-ticker-hidden');
+        if(tfHid)tfHid.value=ticker;
+        if(tfVis&&tfVis.type!=='hidden')tfVis.value=ticker;
         // Auto-fill name if empty
         const nf=document.getElementById('f-name');
         if(nf&&!nf.value&&name)nf.value=name;
@@ -970,7 +973,7 @@ function priceCell(a){
 // ════════════════════════════════════════════════════
 function getConsolidated(cat){
   const byKey={};
-  for(const a of (filteredAssets||data.assets.filter(x=>x.cat===cat))){
+  for(const a of data.assets.filter(x=>x.cat===cat)){
     const key=(a.ticker||a.name).toUpperCase();
     if(!byKey[key])byKey[key]={name:a.name,ticker:a.ticker||'',envelopes:new Set(),brokers:new Set(),totalQty:0,totalInvested:0,lots:[],cgId:a.cgId,exchange:a.exchange};
     const g=byKey[key];
@@ -1191,8 +1194,9 @@ function renderBourse(stats,totalBrut){
   // Inject search above tabs
   const sEl=document.getElementById('bourse-search-area');
   if(sEl)sEl.innerHTML=searchBar('bourse',allB.length,filteredB.length);
-  document.getElementById('bourse-tab-consolide').innerHTML=renderConsolidatedTable('bourse',filteredB);
-  document.getElementById('bourse-tab-lots').innerHTML=renderLotsTable('bourse',filteredB);
+  const bFilter=catSearch['bourse']?filteredB:null;
+  document.getElementById('bourse-tab-consolide').innerHTML=renderConsolidatedTable('bourse',bFilter);
+  document.getElementById('bourse-tab-lots').innerHTML=renderLotsTable('bourse',bFilter);
 }
 
 // ── CRYPTO ──────────────────────────────────────────
@@ -1204,8 +1208,9 @@ function renderCrypto(stats,totalBrut){
   document.getElementById('crypto-kpi').innerHTML=`<div class="kpi-card"><div class="kpi-label">Valeur portefeuille</div><div class="kpi-value" style="font-size:26px">${fmt(stats.value)}</div></div><div class="kpi-card"><div class="kpi-label">Investi</div><div class="kpi-value" style="font-size:26px;color:var(--text-dim)">${stats.invested>0?fmt(stats.invested):'—'}</div></div><div class="kpi-card"><div class="kpi-label">+/- value</div><div class="kpi-value" style="font-size:26px;color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}</div>${plP!==null?`<div class="kpi-delta ${plP>=0?'pos':'neg'}">${fmtPct(plP)}</div>`:''}</div><div class="kpi-card"><div class="kpi-label">Part patrimoine</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">${pct}%</div></div>`;
   const sEl=document.getElementById('crypto-search-area');
   if(sEl)sEl.innerHTML=searchBar('crypto',allC.length,filteredC.length);
-  document.getElementById('crypto-tab-consolide').innerHTML=renderConsolidatedTable('crypto',filteredC);
-  document.getElementById('crypto-tab-lots').innerHTML=renderLotsTable('crypto',filteredC);
+  const cFilter=catSearch['crypto']?filteredC:null;
+  document.getElementById('crypto-tab-consolide').innerHTML=renderConsolidatedTable('crypto',cFilter);
+  document.getElementById('crypto-tab-lots').innerHTML=renderLotsTable('crypto',cFilter);
 }
 
 // ── ÉPARGNE ─────────────────────────────────────────
@@ -1330,7 +1335,7 @@ function buildBourseFields(a){const v=a||{};const tp=v.type||'etf',env=v.envelop
     <div id="bourse-isin-wrap" style="display:${initMode==='isin'?'block':'none'}">
       <input type="text" id="f-isin" placeholder="IE00BG0J4C88…" value="${v.isin||''}" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();if(this.value.length>=12)resolveIsin(this.value)">
       <div class="isin-resolve" id="isin-status">${v.ticker&&v.isin?'✓ Ticker résolu : '+v.ticker:''}</div>
-      <input type="hidden" id="f-ticker" value="${v.ticker||''}">
+      <input type="hidden" id="f-ticker-hidden" value="${v.ticker||''}">
     </div>
   </div>
   <div class="fg">
@@ -1435,7 +1440,9 @@ function saveAsset(){
     asset={...base,subtype:st,address:gv('f-address'),surface:gn('f-surface')||null,invested:inv,value:val,charges:gn('f-charges')||null,monthlyRent:st==='locatif'?gn('f-rent'):null,occupancy:st==='locatif'?gn('f-occ'):null};
   } else if(cat==='bourse'){
     const qty=gn('f-quantity'),pru=gn('f-pru'),fees=gn('f-fees');
-    const ticker=(gv('f-ticker')||'').toUpperCase();
+    // In ISIN mode, ticker may be in the hidden field
+    const tickerRaw=(gv('f-ticker-hidden')||gv('f-ticker')||'').toUpperCase();
+    const ticker=tickerRaw;
     const isin=(gv('f-isin')||'').toUpperCase()||null;
     const broker=gv('f-broker')||null;
     asset={...base,type:gv('f-type'),enveloppe:gv('f-enveloppe'),ticker,isin,broker,quantity:qty,pru,fees,value:qty*(livePrices[ticker]||pru),invested:qty*pru+fees};
