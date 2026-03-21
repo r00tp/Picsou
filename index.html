@@ -4,7 +4,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Picsou — Gestion de patrimoine</title>
+<title>Orion — Gestion de patrimoine</title>
+
+<!-- ╔══════════════════════════════════════════╗
+     ║           PWA — v1.6                     ║
+     ╚══════════════════════════════════════════╝ -->
+
+<!-- Manifest PWA -->
+<link rel="manifest" href="/manifest.json">
+
+<!-- Thème & couleur de barre (Android / Chrome) -->
+<meta name="theme-color" content="#0d0f14">
+
+<!-- iOS – comportement plein écran -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orion">
+
+<!-- iOS – icônes Apple Touch -->
+<link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120x120.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167x167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180x180.png">
+
+<!-- Favicons navigateur -->
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+
+<!-- Windows / Microsoft Tiles -->
+<meta name="msapplication-TileImage" content="/icons/icon-144x144.png">
+<meta name="msapplication-TileColor" content="#0d0f14">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -422,7 +451,7 @@ color:inherit; line-height:1;
 <div class="app">
 
 <aside class="sidebar">
-  <div class="sidebar-logo"><h1>Picsou</h1><span>Gestion de patrimoine</span></div>
+  <div class="sidebar-logo"><h1>Orion</h1><span>Gestion de patrimoine</span></div>
   <nav class="sidebar-nav">
     <div class="nav-section">Vue d'ensemble</div>
     <div class="nav-item active" data-sec="dashboard" onclick="showSection('dashboard',this)"><span class="ni">◈</span><span class="mob-label">Accueil</span></div>
@@ -531,7 +560,7 @@ color:inherit; line-height:1;
       <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb);transition:all .15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
       <input type="file" id="importFileDash" accept=".json" style="display:none" onchange="importData(event)">
     </div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.5</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.6</div>
   </div>
   </div>
 
