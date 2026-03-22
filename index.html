@@ -537,7 +537,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
       <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb);transition:all .15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
       <input type="file" id="importFileDash" accept=".json" style="display:none" onchange="importData(event)">
     </div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.6</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.7</div>
   </div>
   </div>
 
@@ -1400,46 +1400,7 @@ function renderAll(){
   if(!leg.innerHTML)leg.innerHTML='<div class="empty" style="padding:14px"><div class="empty-text">Aucun actif</div></div>';
   renderEvoChart();renderPerfChart();
   // All assets
-  const tbody=document.getElementById('all-assets-table'),emEl=document.getElementById('all-assets-empty');
-  const wrap=document.getElementById('all-assets-table-wrap');
-  if(tbody)tbody.innerHTML='';const sorted=[...data.assets].sort((a,b)=>assetValue(b)-assetValue(a));
-  if(emEl)emEl.style.display=sorted.length?'none':'block';
-  if(isMobile()&&sorted.length){
-    // Mobile: render summary cards
-    if(wrap)wrap.style.display='none';
-    let mobHtml='<div style="display:none" id="mob-all-assets-placeholder"></div>';
-    // inject cards directly after tbody
-    const existing=document.getElementById('mob-all-assets');
-    const parent=tbody.parentElement?.parentElement?.parentElement;
-    let mobDiv=document.getElementById('mob-all-assets');
-    if(!mobDiv){mobDiv=document.createElement('div');mobDiv.id='mob-all-assets';if(parent)parent.appendChild(mobDiv);}
-    mobDiv.innerHTML=sorted.map(a=>{
-      const v=assetValue(a),inv=assetInvested(a),pl=inv>0?v-inv:null,plP=inv>0?((v-inv)/inv*100):null;
-      const plCl=pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)';
-      return`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px 14px;margin-bottom:9px;display:flex;align-items:center;gap:12px">
-        <div style="width:34px;height:34px;border-radius:8px;background:${CATS[a.cat].color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${CATS[a.cat].icon}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:500">${a.name}</div>
-          <div style="font-size:11px;color:var(--text-dim);font-family:var(--fm)">${a.ticker||CATS[a.cat].label}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-family:var(--fd);font-size:16px">${fmt(v)}</div>
-          ${pl!==null?`<div style="font-size:11px;color:${plCl};font-family:var(--fm)">${pl>=0?'+':''}${fmt(pl)}</div>`:''}
-        </div>
-        <div style="display:flex;flex-direction:column;gap:2px">
-          <button class="action-btn" onclick="editAsset('${a.id}')">✎</button>
-          <button class="action-btn del" onclick="deleteAsset('${a.id}')">✕</button>
-        </div>
-      </div>`;
-    }).join('');
-  } else {
-    if(wrap)wrap.style.display='';
-    const mobDiv=document.getElementById('mob-all-assets');
-    if(mobDiv)mobDiv.innerHTML='';
-    for(const a of sorted){const v=assetValue(a),inv=assetInvested(a),pl=inv>0?v-inv:null,plP=inv>0?((v-inv)/inv*100):null;
-      tbody.innerHTML+=`<tr><td><div style="font-size:13px">${a.name}</div>${a.ticker?`<div style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">${a.ticker}</div>`:''}</td><td><span class="badge" style="background:${CATS[a.cat].color}22;color:${CATS[a.cat].color}"><span class="badge-dot" style="background:${CATS[a.cat].color}"></span>${CATS[a.cat].label}</span></td><td class="td-r">${fmt(v)}</td><td class="td-r" style="color:var(--text-dim)">${inv>0?fmt(inv):'—'}</td><td class="td-r" style="color:${pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)'}">${pl!==null?(pl>=0?'+':'')+fmt(pl):'—'}${plP!==null?`<span style="font-size:10px;margin-left:3px">(${fmtPct(plP)})</span>`:''}</td><td class="td-r">${(a.cat==='bourse'||a.cat==='crypto')?priceCell(a):'—'}</td><td><button class="action-btn" onclick="editAsset('${a.id}')">✎</button><button class="action-btn del" onclick="deleteAsset('${a.id}')">✕</button></td></tr>`;
-    }
-  }
+  // "Tous les actifs" panel removed — no table to render
   renderImmo(byCat.immo||{value:0,invested:0,count:0},totalBrut);
   renderBourse(byCat.bourse||{value:0,invested:0,count:0},totalBrut);
   renderCrypto(byCat.crypto||{value:0,invested:0,count:0},totalBrut);
