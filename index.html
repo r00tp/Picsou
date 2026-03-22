@@ -529,15 +529,14 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
         <div style="margin-top:8px;font-size:10px;color:var(--text-muted);font-family:var(--fm)">∗ Données S&amp;P 500 approx. après août 2025.</div>
       </div>
     </div>
-
-  <!-- DASHBOARD FOOTER: import/export + copyright (shown on mobile too) -->
+  <!-- DASHBOARD FOOTER -->
   <div id="dashboard-footer" style="margin-top:8px;padding:16px 0 4px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
     <div style="display:flex;gap:8px">
       <button onclick="exportData()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb);transition:all .15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬇ Export</button>
       <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb);transition:all .15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
       <input type="file" id="importFileDash" accept=".json" style="display:none" onchange="importData(event)">
     </div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.7</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.8</div>
   </div>
   </div>
 
@@ -686,10 +685,42 @@ const CG_MAP={
 // ════════════════════════════════════════════════════
 // LIVE PRICES  (mémoire uniquement, non persisté)
 // ════════════════════════════════════════════════════
-let livePrices = {};        // { 'bitcoin': 42000 (USD), 'AAPL': 178.5, ... }
-let priceErrors = {};       // { 'BADTICKER': 'Not found' }
+let livePrices = {};
+let cachedPrices = {};
+let freshPrices = new Set();
+let priceErrors = {};
 let priceLastUpdated = null;
 let priceLoading = false;
+
+const PRICE_CACHE_KEY = 'orion_price_cache';
+function savePriceCache(){
+  const out = {};
+  for(const key of Object.keys(livePrices)){
+    if(key.endsWith('__ccy')) continue;
+    out[key] = {price: livePrices[key], ccy: livePrices[key+'__ccy']||null, ts: Date.now(), fx: fxRate};
+  }
+  try{ localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify(out)); }catch(e){}
+}
+function loadPriceCache(){
+  try{
+    const raw = localStorage.getItem(PRICE_CACHE_KEY);
+    if(!raw) return;
+    cachedPrices = JSON.parse(raw);
+    for(const key of Object.keys(cachedPrices)){
+      const v = cachedPrices[key];
+      livePrices[key] = v.price;
+      if(v.ccy) livePrices[key+'__ccy'] = v.ccy;
+    }
+    const keys = Object.keys(cachedPrices);
+    if(keys.length && cachedPrices[keys[0]].fx) fxRate = cachedPrices[keys[0]].fx;
+  }catch(e){}
+}
+function isPriceFresh(key){ return freshPrices.has(key); }
+function cacheAgeMin(key){
+  const v = cachedPrices[key];
+  if(!v || !v.ts) return null;
+  return Math.round((Date.now()-v.ts)/60000);
+}
 let fxRate = 1.08;          // EUR/USD: 1 EUR = fxRate USD (fetched live, fallback 1.08)
 
 async function fetchEurUsd(){
@@ -832,7 +863,7 @@ async function fetchCoinGeckoPrices(ids){
   function parseCoinGecko(json){
     let anyOk=false;
     for(const id of ids){
-      if(json[id]?.usd!=null){livePrices[id]=json[id].usd;delete priceErrors[id];anyOk=true;}
+      if(json[id]?.usd!=null){livePrices[id]=json[id].usd;freshPrices.add(id);delete priceErrors[id];anyOk=true;}
     }
     return anyOk;
   }
@@ -842,6 +873,7 @@ async function fetchCoinGeckoPrices(ids){
     for(const item of (json.data||[])){
       if(ids.includes(item.id)&&item.priceUsd!=null){
         livePrices[item.id]=parseFloat(item.priceUsd);
+        freshPrices.add(item.id);
         delete priceErrors[item.id];
         anyOk=true;
       }
@@ -871,46 +903,69 @@ async function fetchCoinGeckoPrices(ids){
 }
 
 // Yahoo Finance — chaîne de 4 endpoints/proxies pour contourner CORS
+// Convert Yahoo ticker to Stooq format
+function toStooqT(ticker){
+  const t = ticker.toLowerCase();
+  if(t.endsWith('.pa')) return t.replace('.pa','.fr');
+  if(t.endsWith('.l'))  return t.replace('.l','.uk');
+  if(t.endsWith('.de')) return t;
+  if(t.endsWith('.mi')) return t.replace('.mi','.it');
+  if(t.endsWith('.as')) return t.replace('.as','.nl');
+  if(t.endsWith('.sw')) return t.replace('.sw','.ch');
+  if(!t.includes('.'))  return t+'.us';
+  return t;
+}
+// Guess currency from Yahoo ticker suffix
+function tickerCcy(ticker){
+  const t=ticker.toLowerCase();
+  if(t.endsWith('.pa')||t.endsWith('.de')||t.endsWith('.mi')||t.endsWith('.as')||t.endsWith('.br')) return 'EUR';
+  if(t.endsWith('.l')) return 'GBP';
+  if(t.endsWith('.sw')) return 'CHF';
+  return 'USD';
+}
+
 async function fetchYahooPrice(ticker){
-  const t=ticker.toUpperCase();
-  const baseUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
-  const baseUrl2=`https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
-  const quoteUrl=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(ticker)}`;
+  const t = ticker.toUpperCase();
+  const yUrl1 = 'https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
+  const yUrl2 = 'https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
+  const stooqU = 'https://stooq.com/q/l/?s='+encodeURIComponent(toStooqT(ticker))+'&f=sd2t2ohlcv&h&e=csv';
+  const aoBase = 'https://api.allorigins.win/get?url=';
 
-  function extractChart(json){
-    const meta=json?.chart?.result?.[0]?.meta;
-    if(meta?.regularMarketPrice==null)return null;
-    return{price:meta.regularMarketPrice,currency:(meta.currency||'USD').toUpperCase()};
+  function exChart(json){
+    const meta=json&&json.chart&&json.chart.result&&json.chart.result[0]&&json.chart.result[0].meta;
+    if(!meta||meta.regularMarketPrice==null) return null;
+    return {price: meta.regularMarketPrice, ccy: (meta.currency||'USD').toUpperCase()};
   }
-  function extractQuote(json){
-    const q=json?.quoteResponse?.result?.[0];
-    if(q?.regularMarketPrice==null)return null;
-    return{price:q.regularMarketPrice,currency:(q.currency||'USD').toUpperCase()};
+  function exStooq(text){
+    const lines=(text||'').trim().split('\n');
+    if(lines.length<2) return null;
+    const vals=lines[1].split(',');
+    const price=parseFloat(vals[6]);
+    if(!price||isNaN(price)||price<=0) return null;
+    return {price: price, ccy: tickerCcy(ticker)};
   }
 
-  const attempts=[
-    // 1. query1 direct chart
-    async()=>{const r=await fetch(baseUrl,{signal:AbortSignal.timeout(6000),mode:'cors'});if(!r.ok)throw 0;return extractChart(await r.json());},
-    // 2. query2 direct chart
-    async()=>{const r=await fetch(baseUrl2,{signal:AbortSignal.timeout(6000),mode:'cors'});if(!r.ok)throw 0;return extractChart(await r.json());},
-    // 3. allorigins proxy (chart)
-    async()=>{const r=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(baseUrl2)}`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return extractChart(await r.json());},
-    // 4. corsproxy.io (quote endpoint — format différent)
-    async()=>{const r=await fetch(`https://corsproxy.io/?url=${encodeURIComponent(quoteUrl)}`,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return extractQuote(await r.json());},
+  const attempts = [
+    async()=>{ const r=await fetch(yUrl1,{signal:AbortSignal.timeout(5000)}); if(!r.ok)throw 0; return exChart(await r.json()); },
+    async()=>{ const r=await fetch(yUrl2,{signal:AbortSignal.timeout(5000)}); if(!r.ok)throw 0; return exChart(await r.json()); },
+    async()=>{ const r=await fetch(aoBase+encodeURIComponent(yUrl2),{signal:AbortSignal.timeout(12000)}); if(!r.ok)throw 0; return exChart(JSON.parse((await r.json()).contents)); },
+    async()=>{ const r=await fetch(stooqU,{signal:AbortSignal.timeout(8000)}); if(!r.ok)throw 0; return exStooq(await r.text()); },
+    async()=>{ const r=await fetch(aoBase+encodeURIComponent(stooqU),{signal:AbortSignal.timeout(12000)}); if(!r.ok)throw 0; return exStooq((await r.json()).contents); },
   ];
 
-  for(const attempt of attempts){
+  for(const fn of attempts){
     try{
-      const result=await attempt();
-      if(result&&result.price!=null){
-        livePrices[t]=result.price;
-        livePrices[t+'__ccy']=result.currency;
+      const res = await fn();
+      if(res && res.price > 0){
+        livePrices[t] = res.price;
+        livePrices[t+'__ccy'] = res.ccy;
+        freshPrices.add(t);
         delete priceErrors[t];
         return;
       }
-    }catch(e){/* try next */}
+    }catch(e){ /* next */ }
   }
-  priceErrors[t]='Ticker non trouvé (essayez le format Yahoo : NVDA, MC.PA, CW8.PA)';
+  priceErrors[t] = 'sync_error';
 }
 
 async function refreshAllPrices(){
@@ -944,6 +999,7 @@ async function refreshAllPrices(){
 
   priceLastUpdated=new Date();
   priceLoading=false;
+  savePriceCache();
 
   // Count results only for the IDs we requested
   const allRequested=[...cgIds,...yahooTickers];
@@ -980,8 +1036,8 @@ function updatePriceStatus(state){
   let dotClass='idle',msg='',btnClass='price-refresh';
   if(state==='loading'){dotClass='loading';msg='Chargement des cours…';btnClass='price-refresh spinning';}
   else if(state==='ok'){dotClass='ok';msg='Cours en direct · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
-  else if(state==='partial'){dotClass='loading';msg='Partiel · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
-  else if(state==='error'){dotClass='error';msg='Erreur de connexion — Réessayer ↻';}
+  else if(state==='partial'){dotClass='loading';msg='Partiel · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' — certains cours indisponibles';}
+  else if(state==='error'){dotClass='error';msg='Hors ligne — derniers cours en cache ↻';}
   else{msg='Cliquer ↻ pour charger les cours';}
 
   dots.forEach(d=>{d.className='price-bar-dot '+dotClass;});
@@ -1185,13 +1241,34 @@ function renderDonut(byCat){
 // PRICE CELL helpers
 // ════════════════════════════════════════════════════
 function priceCell(a){
-  const live=getLivePrice(a);
-  const err=hasPriceError(a);
-  const stored=a.currentPrice;
-  if(live!=null)return`<div class="price-live"><div class="price-live-dot"></div><span>${fmtLivePrice(a,live)}</span></div>`;
-  if(err){const key=a.cat==='crypto'?(a.cgId||(CG_MAP[a.ticker?.toUpperCase()])):a.ticker?.toUpperCase();return`<div class="price-live"><div class="price-live-dot err"></div><span class="price-err-badge" title="${priceErrors[key]||''}">ERR</span></div>`;}
-  if(stored)return`<div class="price-live"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">${fmtLivePrice(a,stored)}</span></div>`;
-  return`<span style="color:var(--text-muted);font-family:var(--fm);font-size:11px">—</span>`;
+  const live = getLivePrice(a);
+  const err  = hasPriceError(a);
+  const key  = a.cat==='crypto' ? (a.cgId||(a.ticker?CG_MAP[a.ticker.toUpperCase()]:null)) : a.ticker ? a.ticker.toUpperCase() : null;
+  const fresh = key ? isPriceFresh(key) : false;
+  const age   = key ? cacheAgeMin(key) : null;
+  const ageStr = age!==null ? (age<60 ? age+'min' : Math.round(age/60)+'h') : '';
+  const tooltip = ageStr ? 'Dernière mise à jour : il y a '+ageStr : '';
+
+  if(live!=null && fresh){
+    // ● Vert : cours en direct (fetched this session)
+    return '<div class="price-live"><div class="price-live-dot"></div><span>'+fmtLivePrice(a,live)+'</span></div>';
+  }
+  if(live!=null && !fresh){
+    // ● Gris : valeur en cache (pas encore rafraîchie cette session)
+    return '<div class="price-live" title="'+tooltip+'"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,live)+'</span></div>';
+  }
+  if(err && live!=null){
+    // ● Amber : erreur de synchro mais valeur en cache disponible
+    return '<div class="price-live" title="Erreur de synchronisation — '+tooltip+'"><div class="price-live-dot" style="background:var(--gold)"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,live)+' <span style="font-size:9px;color:var(--gold)">⚠</span></span></div>';
+  }
+  if(err){
+    // ● Rouge : erreur, aucune valeur disponible
+    return '<div class="price-live"><div class="price-live-dot err"></div><span class="price-err-badge">⚠ sync</span></div>';
+  }
+  if(a.currentPrice){
+    return '<div class="price-live"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,a.currentPrice)+'</span></div>';
+  }
+  return '<span style="color:var(--text-muted);font-family:var(--fm);font-size:11px">—</span>';
 }
 
 // ════════════════════════════════════════════════════
@@ -1400,8 +1477,8 @@ function renderAll(){
   if(!leg.innerHTML)leg.innerHTML='<div class="empty" style="padding:14px"><div class="empty-text">Aucun actif</div></div>';
   renderEvoChart();renderPerfChart();
   // All assets
-  // "Tous les actifs" panel removed — no table to render
-  renderImmo(byCat.immo||{value:0,invested:0,count:0},totalBrut);
+  // "Tous les actifs" supprimé
+    renderImmo(byCat.immo||{value:0,invested:0,count:0},totalBrut);
   renderBourse(byCat.bourse||{value:0,invested:0,count:0},totalBrut);
   renderCrypto(byCat.crypto||{value:0,invested:0,count:0},totalBrut);
   renderEpargne(byCat.epargne||{value:0,invested:0,count:0},totalBrut);
@@ -1870,6 +1947,7 @@ function renderLotsCards(assets,cat){
 // INIT
 // ════════════════════════════════════════════════════
 loadData();
+loadPriceCache();
 autoSnapshot();
 renderAll();
 // Fetch live prices on load
