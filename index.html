@@ -233,38 +233,82 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
 
   /* ── Layout ── */
   .app{flex-direction:column}
-  .sidebar{
-    /* Desktop sidebar hidden on mobile */
-    width:100%; height:auto;
-    position:fixed; top:auto; left:0; right:0; bottom:0;
-    flex-direction:row; align-items:stretch;
-    border-right:none; border-top:1px solid var(--border);
-    z-index:200; overflow:hidden;
-  }
-  .sidebar-logo{display:none}
-  .sidebar-nav{
-    display:flex; flex-direction:row; align-items:stretch;
-    flex:1; overflow-x:auto; overflow-y:hidden;
-    padding:0; scrollbar-width:none;
-  }
-  .sidebar-nav::-webkit-scrollbar{display:none}
-  .nav-section{display:none}
-  .nav-item{
-    flex-direction:column; gap:3px; padding:8px 10px;
-    font-size:9px; letter-spacing:.02em; min-width:58px;
-    text-align:center; border-left:none;
-    border-top:2px solid transparent; justify-content:center;
-    flex-shrink:0;
-  }
-  .nav-item.active{border-top-color:var(--gold);border-left-color:transparent}
-  .nav-item .ni{font-size:18px; width:auto}
-  .nav-dot{display:none}
-  .sidebar-footer{display:none}
+  .sidebar{display:none}
   .main{
     margin-left:0;
-    padding:14px 14px 80px;
+    padding:14px 14px calc(70px + env(safe-area-inset-bottom,0px));
     max-width:100vw;
   }
+
+  /* ── Bottom nav (5 fixed tabs, NO horizontal scroll) ── */
+  .mob-bottom-nav{
+    display:flex!important;
+    flex-direction:row;
+    position:fixed;left:0;right:0;bottom:0;
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    z-index:200;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    touch-action:pan-y;
+    overscroll-behavior:none;
+    -webkit-overflow-scrolling:auto;
+  }
+  .mob-tab{
+    flex:1;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    gap:3px;padding:8px 4px 6px;
+    cursor:pointer;color:var(--text-dim);
+    border-top:2px solid transparent;
+    transition:color .15s;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+  }
+  .mob-tab.active{color:var(--gold);border-top-color:var(--gold)}
+  .mob-tab-icon{font-size:19px;line-height:1;display:block}
+  .mob-tab-label{font-size:9px;color:inherit;line-height:1;letter-spacing:.02em}
+
+  /* ── Segmented control ── */
+  .seg-control{
+    display:flex;background:var(--surface2);
+    border-radius:10px;padding:3px;margin-bottom:16px;
+    border:1px solid var(--border);
+  }
+  .seg-btn{
+    flex:1;padding:8px 10px;border:none;border-radius:8px;
+    background:none;color:var(--text-dim);cursor:pointer;
+    font-size:12px;font-family:var(--fb);
+    transition:all .15s;text-align:center;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .seg-btn.active{
+    background:var(--surface);color:var(--text);
+    box-shadow:0 1px 4px rgba(0,0,0,.35);
+  }
+
+  /* ── Plus bottom sheet ── */
+  .plus-sheet-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);
+    backdrop-filter:blur(4px);z-index:300;
+    opacity:0;pointer-events:none;transition:opacity .2s;
+  }
+  .plus-sheet-overlay.open{opacity:1;pointer-events:all}
+  .plus-sheet{
+    position:fixed;left:0;right:0;bottom:0;
+    background:var(--surface);border-radius:18px 18px 0 0;
+    border-top:1px solid var(--border);z-index:301;
+    padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    transform:translateY(100%);transition:transform .25s ease;
+    overscroll-behavior:contain;
+  }
+  .plus-sheet-overlay.open .plus-sheet{transform:translateY(0)}
+  .plus-sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:14px auto 0}
+  .plus-sheet-title{font-family:var(--fd);font-size:18px;font-weight:300;color:var(--text);padding:14px 22px 10px;border-bottom:1px solid var(--border)}
+  .plus-sheet-item{display:flex;align-items:center;gap:14px;padding:15px 22px;cursor:pointer;border-bottom:1px solid var(--border);-webkit-tap-highlight-color:transparent;transition:background .15s}
+  .plus-sheet-item:last-child{border-bottom:none}
+  .plus-sheet-item:active{background:var(--surface2)}
+  .plus-sheet-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .plus-sheet-name{font-size:14px;color:var(--text)}
+  .plus-sheet-desc{font-size:11px;color:var(--text-dim);font-family:var(--fm);margin-top:2px}
 
   /* ── KPI grids ── */
   .kpi-5,.kpi-4,.kpi-3{grid-template-columns:1fr 1fr !important}
@@ -388,7 +432,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
 
   /* ── FAB (floating add button on mobile) ── */
   .mob-fab{
-    position:fixed; bottom:74px; right:16px;
+    position:fixed; bottom:calc(72px + env(safe-area-inset-bottom,0px)); right:18px;
     width:50px; height:50px; border-radius:50%;
     background:var(--gold); color:#0d0f14;
     font-size:22px; font-weight:300; line-height:1;
@@ -406,6 +450,9 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
 @media (min-width:769px){
   .mob-fab{display:none}
   .mob-show-on-mobile{display:none}
+  .mob-bottom-nav{display:none!important}
+  .plus-sheet-overlay{display:none!important}
+  #section-marches,#section-actifs{display:none!important}
 }
 
 /* Mobile label text under nav icons */
@@ -536,7 +583,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
       <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb);transition:all .15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
       <input type="file" id="importFileDash" accept=".json" style="display:none" onchange="importData(event)">
     </div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.8</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.12</div>
   </div>
   </div>
 
@@ -694,31 +741,34 @@ let priceLoading = false;
 
 const PRICE_CACHE_KEY = 'orion_price_cache';
 function savePriceCache(){
-  const out = {};
-  for(const key of Object.keys(livePrices)){
-    if(key.endsWith('__ccy')) continue;
-    out[key] = {price: livePrices[key], ccy: livePrices[key+'__ccy']||null, ts: Date.now(), fx: fxRate};
-  }
-  try{ localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify(out)); }catch(e){}
+  try{
+    const out = {};
+    const keys = Object.keys(livePrices).filter(function(k){return k.indexOf('__ccy')<0;});
+    for(var i=0;i<keys.length;i++){
+      var k=keys[i];
+      out[k]={price:livePrices[k],ccy:livePrices[k+'__ccy']||null,ts:Date.now(),fx:fxRate};
+    }
+    localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify(out));
+  }catch(e){}
 }
 function loadPriceCache(){
   try{
-    const raw = localStorage.getItem(PRICE_CACHE_KEY);
-    if(!raw) return;
-    cachedPrices = JSON.parse(raw);
-    for(const key of Object.keys(cachedPrices)){
-      const v = cachedPrices[key];
-      livePrices[key] = v.price;
-      if(v.ccy) livePrices[key+'__ccy'] = v.ccy;
+    var raw=localStorage.getItem(PRICE_CACHE_KEY);
+    if(!raw)return;
+    cachedPrices=JSON.parse(raw);
+    var ckeys=Object.keys(cachedPrices);
+    for(var i=0;i<ckeys.length;i++){
+      var k=ckeys[i]; var v=cachedPrices[k];
+      livePrices[k]=v.price;
+      if(v.ccy)livePrices[k+'__ccy']=v.ccy;
     }
-    const keys = Object.keys(cachedPrices);
-    if(keys.length && cachedPrices[keys[0]].fx) fxRate = cachedPrices[keys[0]].fx;
+    if(ckeys.length>0 && cachedPrices[ckeys[0]].fx) fxRate=cachedPrices[ckeys[0]].fx;
   }catch(e){}
 }
-function isPriceFresh(key){ return freshPrices.has(key); }
+function isPriceFresh(key){return freshPrices.has(key);}
 function cacheAgeMin(key){
-  const v = cachedPrices[key];
-  if(!v || !v.ts) return null;
+  var v=cachedPrices[key];
+  if(!v||!v.ts)return null;
   return Math.round((Date.now()-v.ts)/60000);
 }
 let fxRate = 1.08;          // EUR/USD: 1 EUR = fxRate USD (fetched live, fallback 1.08)
@@ -903,69 +953,62 @@ async function fetchCoinGeckoPrices(ids){
 }
 
 // Yahoo Finance — chaîne de 4 endpoints/proxies pour contourner CORS
-// Convert Yahoo ticker to Stooq format
 function toStooqT(ticker){
-  const t = ticker.toLowerCase();
-  if(t.endsWith('.pa')) return t.replace('.pa','.fr');
-  if(t.endsWith('.l'))  return t.replace('.l','.uk');
-  if(t.endsWith('.de')) return t;
-  if(t.endsWith('.mi')) return t.replace('.mi','.it');
-  if(t.endsWith('.as')) return t.replace('.as','.nl');
-  if(t.endsWith('.sw')) return t.replace('.sw','.ch');
-  if(!t.includes('.'))  return t+'.us';
+  var t=ticker.toLowerCase();
+  if(t.slice(-3)==='.pa')return t.slice(0,-3)+'.fr';
+  if(t.slice(-2)==='.l')return t.slice(0,-2)+'.uk';
+  if(t.slice(-3)==='.mi')return t.slice(0,-3)+'.it';
+  if(t.slice(-3)==='.as')return t.slice(0,-3)+'.nl';
+  if(t.slice(-3)==='.sw')return t.slice(0,-3)+'.ch';
+  if(t.indexOf('.')<0)return t+'.us';
   return t;
 }
-// Guess currency from Yahoo ticker suffix
 function tickerCcy(ticker){
-  const t=ticker.toLowerCase();
-  if(t.endsWith('.pa')||t.endsWith('.de')||t.endsWith('.mi')||t.endsWith('.as')||t.endsWith('.br')) return 'EUR';
-  if(t.endsWith('.l')) return 'GBP';
-  if(t.endsWith('.sw')) return 'CHF';
-  return 'USD';
+  var t=ticker.toLowerCase();
+  if(t.slice(-3)==='.pa'||t.slice(-3)==='.de'||t.slice(-3)==='.mi'||t.slice(-3)==='.as')return'EUR';
+  if(t.slice(-2)==='.l')return'GBP';
+  if(t.slice(-3)==='.sw')return'CHF';
+  return'USD';
 }
-
 async function fetchYahooPrice(ticker){
-  const t = ticker.toUpperCase();
-  const yUrl1 = 'https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
-  const yUrl2 = 'https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
-  const stooqU = 'https://stooq.com/q/l/?s='+encodeURIComponent(toStooqT(ticker))+'&f=sd2t2ohlcv&h&e=csv';
-  const aoBase = 'https://api.allorigins.win/get?url=';
-
-  function exChart(json){
-    const meta=json&&json.chart&&json.chart.result&&json.chart.result[0]&&json.chart.result[0].meta;
-    if(!meta||meta.regularMarketPrice==null) return null;
-    return {price: meta.regularMarketPrice, ccy: (meta.currency||'USD').toUpperCase()};
+  const t=ticker.toUpperCase();
+  const yU1='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
+  const yU2='https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
+  const stU='https://stooq.com/q/l/?s='+encodeURIComponent(toStooqT(ticker))+'&f=sd2t2ohlcv&h&e=csv';
+  const ao='https://api.allorigins.win/get?url=';
+  function exC(j){
+    const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
+    if(!m||m.regularMarketPrice==null)return null;
+    return{price:m.regularMarketPrice,ccy:(m.currency||'USD').toUpperCase()};
   }
-  function exStooq(text){
-    const lines=(text||'').trim().split('\n');
-    if(lines.length<2) return null;
-    const vals=lines[1].split(',');
-    const price=parseFloat(vals[6]);
-    if(!price||isNaN(price)||price<=0) return null;
-    return {price: price, ccy: tickerCcy(ticker)};
+  function exS(txt){
+    const lines=(txt||'').trim().split('\n');
+    if(lines.length<2)return null;
+    const v=lines[1].split(',');
+    const p=parseFloat(v[6]);
+    if(!p||isNaN(p)||p<=0)return null;
+    return{price:p,ccy:tickerCcy(ticker)};
   }
-
-  const attempts = [
-    async()=>{ const r=await fetch(yUrl1,{signal:AbortSignal.timeout(5000)}); if(!r.ok)throw 0; return exChart(await r.json()); },
-    async()=>{ const r=await fetch(yUrl2,{signal:AbortSignal.timeout(5000)}); if(!r.ok)throw 0; return exChart(await r.json()); },
-    async()=>{ const r=await fetch(aoBase+encodeURIComponent(yUrl2),{signal:AbortSignal.timeout(12000)}); if(!r.ok)throw 0; return exChart(JSON.parse((await r.json()).contents)); },
-    async()=>{ const r=await fetch(stooqU,{signal:AbortSignal.timeout(8000)}); if(!r.ok)throw 0; return exStooq(await r.text()); },
-    async()=>{ const r=await fetch(aoBase+encodeURIComponent(stooqU),{signal:AbortSignal.timeout(12000)}); if(!r.ok)throw 0; return exStooq((await r.json()).contents); },
+  const attempts=[
+    async function(){const r=await fetch(yU1,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw 0;return exC(await r.json());},
+    async function(){const r=await fetch(yU2,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw 0;return exC(await r.json());},
+    async function(){const r=await fetch(ao+encodeURIComponent(yU2),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;const j=await r.json();return exC(JSON.parse(j.contents));},
+    async function(){const r=await fetch(stU,{signal:AbortSignal.timeout(8000)});if(!r.ok)throw 0;return exS(await r.text());},
+    async function(){const r=await fetch(ao+encodeURIComponent(stU),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;const j=await r.json();return exS(j.contents);},
   ];
-
   for(const fn of attempts){
     try{
-      const res = await fn();
-      if(res && res.price > 0){
-        livePrices[t] = res.price;
-        livePrices[t+'__ccy'] = res.ccy;
+      const res=await fn();
+      if(res&&res.price>0){
+        livePrices[t]=res.price;
+        livePrices[t+'__ccy']=res.ccy;
         freshPrices.add(t);
         delete priceErrors[t];
         return;
       }
-    }catch(e){ /* next */ }
+    }catch(e){}
   }
-  priceErrors[t] = 'sync_error';
+  priceErrors[t]='sync_error';
 }
 
 async function refreshAllPrices(){
@@ -1036,7 +1079,7 @@ function updatePriceStatus(state){
   let dotClass='idle',msg='',btnClass='price-refresh';
   if(state==='loading'){dotClass='loading';msg='Chargement des cours…';btnClass='price-refresh spinning';}
   else if(state==='ok'){dotClass='ok';msg='Cours en direct · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
-  else if(state==='partial'){dotClass='loading';msg='Partiel · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' — certains cours indisponibles';}
+  else if(state==='partial'){dotClass='loading';msg='Partiel · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
   else if(state==='error'){dotClass='error';msg='Hors ligne — derniers cours en cache ↻';}
   else{msg='Cliquer ↻ pour charger les cours';}
 
@@ -1241,33 +1284,22 @@ function renderDonut(byCat){
 // PRICE CELL helpers
 // ════════════════════════════════════════════════════
 function priceCell(a){
-  const live = getLivePrice(a);
-  const err  = hasPriceError(a);
-  const key  = a.cat==='crypto' ? (a.cgId||(a.ticker?CG_MAP[a.ticker.toUpperCase()]:null)) : a.ticker ? a.ticker.toUpperCase() : null;
-  const fresh = key ? isPriceFresh(key) : false;
-  const age   = key ? cacheAgeMin(key) : null;
-  const ageStr = age!==null ? (age<60 ? age+'min' : Math.round(age/60)+'h') : '';
-  const tooltip = ageStr ? 'Dernière mise à jour : il y a '+ageStr : '';
-
-  if(live!=null && fresh){
-    // ● Vert : cours en direct (fetched this session)
+  const live=getLivePrice(a);
+  const err=hasPriceError(a);
+  const key=a.cat==='crypto'?(a.cgId||(a.ticker?CG_MAP[a.ticker.toUpperCase()]:null)):(a.ticker?a.ticker.toUpperCase():null);
+  const fresh=key?isPriceFresh(key):false;
+  const age=key?cacheAgeMin(key):null;
+  const ageStr=age!=null?(age<60?age+'min':Math.round(age/60)+'h'):'';
+  if(live!=null&&fresh)
     return '<div class="price-live"><div class="price-live-dot"></div><span>'+fmtLivePrice(a,live)+'</span></div>';
-  }
-  if(live!=null && !fresh){
-    // ● Gris : valeur en cache (pas encore rafraîchie cette session)
-    return '<div class="price-live" title="'+tooltip+'"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,live)+'</span></div>';
-  }
-  if(err && live!=null){
-    // ● Amber : erreur de synchro mais valeur en cache disponible
-    return '<div class="price-live" title="Erreur de synchronisation — '+tooltip+'"><div class="price-live-dot" style="background:var(--gold)"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,live)+' <span style="font-size:9px;color:var(--gold)">⚠</span></span></div>';
-  }
-  if(err){
-    // ● Rouge : erreur, aucune valeur disponible
-    return '<div class="price-live"><div class="price-live-dot err"></div><span class="price-err-badge">⚠ sync</span></div>';
-  }
-  if(a.currentPrice){
+  if(live!=null&&!err)
+    return '<div class="price-live" title="Cache'+(ageStr?' \u00b7 '+ageStr:'')+'"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,live)+'</span></div>';
+  if(live!=null&&err)
+    return '<div class="price-live" title="Erreur sync \u2014 valeur en cache"><div class="price-live-dot" style="background:var(--gold)"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,live)+' <span style="font-size:9px;color:var(--gold)">\u26a0</span></span></div>';
+  if(err)
+    return '<div class="price-live"><div class="price-live-dot err"></div><span class="price-err-badge">\u26a0 sync</span></div>';
+  if(a.currentPrice)
     return '<div class="price-live"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,a.currentPrice)+'</span></div>';
-  }
   return '<span style="color:var(--text-muted);font-family:var(--fm);font-size:11px">—</span>';
 }
 
@@ -1477,13 +1509,17 @@ function renderAll(){
   if(!leg.innerHTML)leg.innerHTML='<div class="empty" style="padding:14px"><div class="empty-text">Aucun actif</div></div>';
   renderEvoChart();renderPerfChart();
   // All assets
-  // "Tous les actifs" supprimé
     renderImmo(byCat.immo||{value:0,invested:0,count:0},totalBrut);
   renderBourse(byCat.bourse||{value:0,invested:0,count:0},totalBrut);
   renderCrypto(byCat.crypto||{value:0,invested:0,count:0},totalBrut);
   renderEpargne(byCat.epargne||{value:0,invested:0,count:0},totalBrut);
   renderAutre(byCat.autre||{value:0,invested:0,count:0},totalBrut);
   renderDettes(totalDettes);renderHistory();
+  if(isMobile()){
+    syncMobPriceDot();
+    if(mobActiveTab==='marches') renderMarchesContent();
+    if(mobActiveTab==='actifs')  renderActifsContent();
+  }
 }
 
 // ── IMMO ────────────────────────────────────────────
@@ -1815,12 +1851,228 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('clic
 // ════════════════════════════════════════════════════
 function isMobile(){return window.innerWidth<=768;}
 
-// Smart FAB: open the right modal for the active section
+// ── MOBILE TAB STATE ──────────────────────────────────────
+var mobActiveTab='dashboard';
+var marchesSubTab='bourse';
+var actifsSubTab='immo';
+
+function initMobileNav(){
+  const nav=document.getElementById('mob-bottom-nav');
+  if(nav) nav.style.display=isMobile()?'flex':'none';
+  syncMobPriceDot();
+}
+
+function syncMobPriceDot(){
+  const src=document.getElementById('pb-dot');
+  const dst=document.getElementById('mob-pb-dot');
+  if(src&&dst) dst.className=src.className;
+}
+
+function mobShowTab(tab){
+  if(!isMobile()){
+    const ni=document.querySelector('[data-sec="'+tab+'"]');
+    showSection(tab,ni);
+    return;
+  }
+  mobActiveTab=tab;
+  // Update bottom tab buttons
+  document.querySelectorAll('.mob-tab').forEach(function(t){t.classList.remove('active');});
+  const tabMap={dashboard:'dashboard',marches:'marches',actifs:'actifs',dettes:'dettes',historique:'plus'};
+  const btnId='mobt-'+(tabMap[tab]||'plus');
+  const btn=document.getElementById(btnId);
+  if(btn) btn.classList.add('active');
+  // Hide all sections
+  document.querySelectorAll('.section').forEach(function(s){s.style.display='none';s.classList.remove('active');});
+  // Show relevant section
+  if(tab==='dashboard'){
+    const s=document.getElementById('section-dashboard');
+    if(s){s.style.display='block';s.classList.add('active');}
+  } else if(tab==='marches'){
+    const s=document.getElementById('section-marches');
+    if(s){s.style.display='block';s.classList.add('active');}
+    renderMarchesContent();
+  } else if(tab==='actifs'){
+    const s=document.getElementById('section-actifs');
+    if(s){s.style.display='block';s.classList.add('active');}
+    renderActifsContent();
+  } else if(tab==='dettes'){
+    const s=document.getElementById('section-dettes');
+    if(s){s.style.display='block';s.classList.add('active');}
+  } else if(tab==='historique'){
+    const s=document.getElementById('section-historique');
+    if(s){s.style.display='block';s.classList.add('active');}
+  }
+  renderAll();
+  requestAnimationFrame(function(){ window.scrollTo(0,0); });
+}
+
+function switchMarchesTab(sub,btn){
+  marchesSubTab=sub;
+  document.querySelectorAll('#marches-seg .seg-btn').forEach(function(b){b.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+  const bEl=document.getElementById('marches-bourse-content');
+  const cEl=document.getElementById('marches-crypto-content');
+  if(bEl) bEl.style.display=sub==='bourse'?'block':'none';
+  if(cEl) cEl.style.display=sub==='crypto'?'block':'none';
+  renderMarchesContent();
+  requestAnimationFrame(function(){ window.scrollTo(0,0); });
+}
+
+function switchActifsTab(sub,btn){
+  actifsSubTab=sub;
+  document.querySelectorAll('#actifs-seg .seg-btn').forEach(function(b){b.classList.remove('active');});
+  if(btn) btn.classList.add('active');
+  ['immo','epargne','autre'].forEach(function(k){
+    const el=document.getElementById('actifs-'+k+'-content');
+    if(el) el.style.display=(k===sub)?'block':'none';
+  });
+  renderActifsContent();
+}
+
+// Build a KPI row HTML string for bourse/crypto on mobile
+function buildKpiRow(stats,totalBrut){
+  const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
+  const pl=stats.invested>0?stats.value-stats.invested:null;
+  const plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
+  return '<div class="kpi-row kpi-4" style="margin-bottom:16px">'
+    +'<div class="kpi-card"><div class="kpi-label">Valeur</div><div class="kpi-value" style="font-size:22px">'+fmt(stats.value)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Investi</div><div class="kpi-value" style="font-size:22px;color:var(--text-dim)">'+(stats.invested>0?fmt(stats.invested):'—')+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">+/- value</div><div class="kpi-value" style="font-size:22px;color:'+(pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)')+'">'+( pl!==null?(pl>=0?'+':'')+fmt(pl):'—')+'</div>'+(plP!==null?'<div class="kpi-delta '+(plP>=0?'pos':'neg')+'">'+fmtPct(plP)+'</div>':'')+'</div>'
+    +'<div class="kpi-card"><div class="kpi-label">Part</div><div class="kpi-value" style="font-size:22px;color:var(--gold)">'+pct+'%</div></div>'
+    +'</div>';
+}
+
+// Build Bourse content HTML string (no DOM IDs needed)
+function buildBourseHTML(stats,totalBrut){
+  const allB=data.assets.filter(function(a){return a.cat==='bourse';});
+  const filteredB=filterBySearch(allB,'bourse');
+  const bFilter=catSearch['bourse']?filteredB:null;
+  const tabsId='mob-b-tabs-'+Date.now();
+  return '<div class="cat-header" style="margin-bottom:16px">'
+    +'<div class="cat-icon-big" style="background:rgba(76,175,125,.15)">📈</div>'
+    +'<div><div class="cat-title-big" style="color:var(--bourse)">Bourse</div>'
+    +'<div class="topbar-date">Actions, ETF, Obligations</div></div>'
+    +'</div>'
+    +buildKpiRow(stats,totalBrut)
+    +searchBar('bourse',allB.length,(bFilter||allB).length)
+    +'<div class="panel" style="margin-bottom:0">'
+      +'<div class="sec-tabs">'
+        +'<button class="sec-tab active" onclick="mobSwitchTab(this,\'mob-bc\',\'mob-bl\')">Vue consolidée</button>'
+        +'<button class="sec-tab" onclick="mobSwitchTab(this,\'mob-bl\',\'mob-bc\')">Positions détaillées</button>'
+      +'</div>'
+      +'<div id="mob-bc" class="panel-body">'+renderConsolidatedTable('bourse',bFilter)+'</div>'
+      +'<div id="mob-bl" class="panel-body" style="display:none">'+renderLotsTable('bourse',bFilter)+'</div>'
+    +'</div>';
+}
+
+// Build Crypto content HTML string
+function buildCryptoHTML(stats,totalBrut){
+  const allC=data.assets.filter(function(a){return a.cat==='crypto';});
+  const filteredC=filterBySearch(allC,'crypto');
+  const cFilter=catSearch['crypto']?filteredC:null;
+  return '<div class="cat-header" style="margin-bottom:16px">'
+    +'<div class="cat-icon-big" style="background:rgba(247,147,26,.15)">₿</div>'
+    +'<div><div class="cat-title-big" style="color:var(--crypto)">Crypto</div>'
+    +'<div class="topbar-date">Actifs numériques & DeFi</div></div>'
+    +'</div>'
+    +buildKpiRow(stats,totalBrut)
+    +searchBar('crypto',allC.length,(cFilter||allC).length)
+    +'<div class="panel" style="margin-bottom:0">'
+      +'<div class="sec-tabs">'
+        +'<button class="sec-tab active" onclick="mobSwitchTab(this,\'mob-cc\',\'mob-cl\')">Vue consolidée</button>'
+        +'<button class="sec-tab" onclick="mobSwitchTab(this,\'mob-cl\',\'mob-cc\')">Positions détaillées</button>'
+      +'</div>'
+      +'<div id="mob-cc" class="panel-body">'+renderConsolidatedTable('crypto',cFilter)+'</div>'
+      +'<div id="mob-cl" class="panel-body" style="display:none">'+renderLotsTable('crypto',cFilter)+'</div>'
+    +'</div>';
+}
+
+// Generic tab switcher for mobile consolidated/lots panels
+function mobSwitchTab(btn,showId,hideId){
+  btn.closest('.sec-tabs').querySelectorAll('.sec-tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+  var show=document.getElementById(showId);
+  var hide=document.getElementById(hideId);
+  if(show)show.style.display='block';
+  if(hide)hide.style.display='none';
+}
+
+function renderMarchesContent(){
+  if(!isMobile()) return;
+  const comp=compute();
+  const bDst=document.getElementById('marches-bourse-content');
+  const cDst=document.getElementById('marches-crypto-content');
+  if(bDst) bDst.innerHTML=buildBourseHTML(comp.byCat.bourse||{value:0,invested:0,count:0},comp.totalBrut);
+  if(cDst) cDst.innerHTML=buildCryptoHTML(comp.byCat.crypto||{value:0,invested:0,count:0},comp.totalBrut);
+  syncMobPriceDot();
+}
+
+// Build Immo HTML for mobile (delegate to renderImmo but capture output)
+function buildImmoHTML(stats,totalBrut){
+  // Temporarily render into a detached div, then extract
+  const tmp=document.createElement('div');
+  tmp.id='section-immo-tmp';
+  document.body.appendChild(tmp);
+  const realEl=document.getElementById('section-immo');
+  const realId=realEl?realEl.id:'';
+  if(realEl) realEl.id='section-immo-hidden-tmp';
+  tmp.id='section-immo';
+  renderImmo(stats,totalBrut);
+  const html=tmp.innerHTML;
+  tmp.id='section-immo-tmp';
+  if(realEl) realEl.id=realId;
+  document.body.removeChild(tmp);
+  return html;
+}
+
+function buildEpargneHTML(stats,totalBrut){
+  const tmp=document.createElement('div');
+  document.body.appendChild(tmp);
+  const realEl=document.getElementById('section-epargne');
+  if(realEl) realEl.id='section-epargne-hidden-tmp';
+  tmp.id='section-epargne';
+  renderEpargne(stats,totalBrut);
+  const html=tmp.innerHTML;
+  tmp.id='section-epargne-tmp';
+  if(realEl) realEl.id='section-epargne';
+  document.body.removeChild(tmp);
+  return html;
+}
+
+function buildAutreHTML(stats,totalBrut){
+  const tmp=document.createElement('div');
+  document.body.appendChild(tmp);
+  const realEl=document.getElementById('section-autre');
+  if(realEl) realEl.id='section-autre-hidden-tmp';
+  tmp.id='section-autre';
+  renderAutre(stats,totalBrut);
+  const html=tmp.innerHTML;
+  tmp.id='section-autre-tmp';
+  if(realEl) realEl.id='section-autre';
+  document.body.removeChild(tmp);
+  return html;
+}
+
+function renderActifsContent(){
+  if(!isMobile()) return;
+  const comp=compute();
+  const iDst=document.getElementById('actifs-immo-content');
+  const eDst=document.getElementById('actifs-epargne-content');
+  const aDst=document.getElementById('actifs-autre-content');
+  if(iDst) iDst.innerHTML=buildImmoHTML(comp.byCat.immo||{value:0,invested:0,count:0},comp.totalBrut);
+  if(eDst) eDst.innerHTML=buildEpargneHTML(comp.byCat.epargne||{value:0,invested:0,count:0},comp.totalBrut);
+  if(aDst) aDst.innerHTML=buildAutreHTML(comp.byCat.autre||{value:0,invested:0,count:0},comp.totalBrut);
+}
+
+function openPlusSheet(){document.getElementById('plus-sheet-overlay').classList.add('open');}
+function closePlusSheet(){document.getElementById('plus-sheet-overlay').classList.remove('open');}
+
+// Smart FAB: context-aware
 function mobFabClick(){
-  const active=document.querySelector('.section.active');
-  const sec=active?active.id.replace('section-',''):'';
-  if(sec==='dettes')openAddDette();
-  else if(['immo','bourse','crypto','epargne','autre'].includes(sec))openAddAsset(sec);
+  if(!isMobile()){openAddAsset();return;}
+  if(mobActiveTab==='marches') openAddAsset(marchesSubTab);
+  else if(mobActiveTab==='actifs') openAddAsset(actifsSubTab);
+  else if(mobActiveTab==='dettes') openAddDette();
   else openAddAsset();
 }
 
@@ -1950,16 +2202,95 @@ loadData();
 loadPriceCache();
 autoSnapshot();
 renderAll();
+initMobileNav();
 // Fetch live prices on load
 const hasMarket=data.assets.some(a=>a.cat==='bourse'||a.cat==='crypto');
 if(hasMarket){refreshAllPrices();}
 
 // Re-render on resize / orientation change (desktop↔mobile switch)
-let _lastMob=isMobile();
-window.addEventListener('resize',()=>{
+var _lastMob=isMobile();
+window.addEventListener('resize',function(){
   const nowMob=isMobile();
-  if(nowMob!==_lastMob){_lastMob=nowMob;renderAll();}
+  if(nowMob!==_lastMob){
+    _lastMob=nowMob;
+    renderAll();
+    initMobileNav();
+    if(!nowMob){
+      document.querySelectorAll('.section').forEach(function(s){s.style.display='';});
+      const active=document.querySelector('[data-sec].active');
+      if(active) active.classList.add('active');
+    }
+  }
 });
 </script>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mob-bottom-nav" id="mob-bottom-nav" style="display:none">
+  <div class="mob-tab active" id="mobt-dashboard" onclick="mobShowTab('dashboard')">
+    <span class="mob-tab-icon">◈</span><span class="mob-tab-label">Accueil</span>
+  </div>
+  <div class="mob-tab" id="mobt-marches" onclick="mobShowTab('marches')">
+    <span class="mob-tab-icon">📊</span><span class="mob-tab-label">Marchés</span>
+  </div>
+  <div class="mob-tab" id="mobt-actifs" onclick="mobShowTab('actifs')">
+    <span class="mob-tab-icon">🏦</span><span class="mob-tab-label">Actifs</span>
+  </div>
+  <div class="mob-tab" id="mobt-dettes" onclick="mobShowTab('dettes')">
+    <span class="mob-tab-icon">⚠</span><span class="mob-tab-label">Dettes</span>
+  </div>
+  <div class="mob-tab" id="mobt-plus" onclick="openPlusSheet()">
+    <span class="mob-tab-icon">⋯</span><span class="mob-tab-label">Plus</span>
+  </div>
+</nav>
+
+<!-- PLUS BOTTOM SHEET -->
+<div class="plus-sheet-overlay" id="plus-sheet-overlay" onclick="closePlusSheet()">
+  <div class="plus-sheet" onclick="event.stopPropagation()">
+    <div class="plus-sheet-handle"></div>
+    <div class="plus-sheet-title">Plus</div>
+    <div class="plus-sheet-item" onclick="mobShowTab('historique');closePlusSheet()">
+      <div class="plus-sheet-icon" style="background:rgba(122,125,138,.15)">⊡</div>
+      <div><div class="plus-sheet-name">Historique</div><div class="plus-sheet-desc">Journal des opérations</div></div>
+    </div>
+    <div class="plus-sheet-item" onclick="exportData();closePlusSheet()">
+      <div class="plus-sheet-icon" style="background:rgba(76,175,125,.12)">⬇</div>
+      <div><div class="plus-sheet-name">Exporter</div><div class="plus-sheet-desc">Sauvegarder en JSON</div></div>
+    </div>
+    <div class="plus-sheet-item" onclick="document.getElementById('importFileMob').click();closePlusSheet()">
+      <div class="plus-sheet-icon" style="background:rgba(201,168,76,.12)">⬆</div>
+      <div><div class="plus-sheet-name">Importer</div><div class="plus-sheet-desc">Charger un fichier JSON</div></div>
+    </div>
+    <input type="file" id="importFileMob" accept=".json" style="display:none" onchange="importData(event)">
+    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center;letter-spacing:.06em">© 2026 r00tp · v1.12</div>
+  </div>
+</div>
+
+<!-- MOBILE COMPOSITE: Marchés (Bourse + Crypto) -->
+<div id="section-marches" class="section" style="display:none">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <div class="seg-control" id="marches-seg" style="flex:1;margin-bottom:0">
+      <button class="seg-btn active" id="seg-bourse" onclick="switchMarchesTab('bourse',this)">📈 Bourse</button>
+      <button class="seg-btn" id="seg-crypto" onclick="switchMarchesTab('crypto',this)">₿ Crypto</button>
+    </div>
+    <div class="price-bar" style="flex-shrink:0">
+      <div class="price-bar-dot idle" id="mob-pb-dot"></div>
+      <button class="price-refresh" id="mob-pb-btn" onclick="refreshAllPrices()" style="font-size:16px">↻</button>
+    </div>
+  </div>
+  <div id="marches-bourse-content"></div>
+  <div id="marches-crypto-content" style="display:none"></div>
+</div>
+
+<!-- MOBILE COMPOSITE: Actifs (Immo + Épargne + Autres) -->
+<div id="section-actifs" class="section" style="display:none">
+  <div class="seg-control" id="actifs-seg" style="margin-bottom:12px">
+    <button class="seg-btn active" id="seg-immo" onclick="switchActifsTab('immo',this)">🏠 Immo</button>
+    <button class="seg-btn" id="seg-epargne" onclick="switchActifsTab('epargne',this)">🏦 Épargne</button>
+    <button class="seg-btn" id="seg-autre" onclick="switchActifsTab('autre',this)">✦ Autres</button>
+  </div>
+  <div id="actifs-immo-content"></div>
+  <div id="actifs-epargne-content" style="display:none"></div>
+  <div id="actifs-autre-content" style="display:none"></div>
+</div>
 </body>
 </html>
