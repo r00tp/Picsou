@@ -238,7 +238,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
 
   /* ── Bottom nav 5 tabs — zero horizontal scroll ── */
   .mob-bottom-nav{
-    display:flex;flex-direction:row;
+    display:flex!important;flex-direction:row;
     position:fixed;left:0;right:0;bottom:0;
     background:var(--surface);border-top:1px solid var(--border);
     z-index:200;padding-bottom:env(safe-area-inset-bottom,0px);
@@ -424,8 +424,8 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
 @media (min-width:769px){
   .mob-fab{display:none}
   .mob-show-on-mobile{display:none}
-  .mob-bottom-nav{display:none!important}
-  .plus-sheet-overlay{display:none!important}
+  .mob-bottom-nav{display:none}
+  .plus-sheet-overlay{display:none}
 }
 @media(min-width:769px){
   #dashboard-footer{opacity:.7;transition:opacity .2s}
@@ -560,7 +560,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
       <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb)" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
       <input type="file" id="importFileDash" accept=".json" style="display:none" onchange="importData(event)">
     </div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.13</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.14</div>
   </div>
   </div>
 
@@ -1799,8 +1799,13 @@ var marchesSubTab='bourse';
 var actifsSubTab='immo';
 
 function initMobileNav(){
-  var nav=document.getElementById('mob-bottom-nav');
-  if(nav) nav.style.display=isMobile()?'flex':'none';
+  // CSS media queries handle nav visibility — no JS needed
+  // Just ensure the active tab is correctly highlighted
+  var btn=document.getElementById('mobt-'+mobActiveTab);
+  if(btn){
+    document.querySelectorAll('.mob-tab').forEach(function(t){t.classList.remove('active');});
+    btn.classList.add('active');
+  }
 }
 
 // ── Build KPI bar HTML from stats ──
@@ -2195,7 +2200,7 @@ window.addEventListener('resize',function(){
 </script>
 
 <!-- MOBILE BOTTOM NAV -->
-<nav class="mob-bottom-nav" id="mob-bottom-nav" style="display:none">
+<nav class="mob-bottom-nav" id="mob-bottom-nav">
   <div class="mob-tab active" id="mobt-dashboard" onclick="mobShowTab('dashboard')">
     <span class="mob-tab-icon">◈</span><span class="mob-tab-label">Accueil</span>
   </div>
@@ -2231,7 +2236,7 @@ window.addEventListener('resize',function(){
       <div><div class="plus-sheet-name">Importer</div><div class="plus-sheet-desc">Charger un fichier JSON</div></div>
     </div>
     <input type="file" id="importFileMob" accept=".json" style="display:none" onchange="importData(event)">
-    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.13</div>
+    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.14</div>
   </div>
 </div>
 
