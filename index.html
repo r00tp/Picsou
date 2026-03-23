@@ -234,33 +234,22 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
   /* ── Layout ── */
   .app{flex-direction:column}
   .sidebar{display:none}
-  .main{
-    margin-left:0;
-    padding:14px 14px calc(70px + env(safe-area-inset-bottom,0px));
-    max-width:100vw;
-  }
+  .main{margin-left:0;padding:14px 14px calc(70px + env(safe-area-inset-bottom,0px));max-width:100vw}
 
-  /* ── Bottom nav (5 fixed tabs, NO horizontal scroll) ── */
+  /* ── Bottom nav 5 tabs — zero horizontal scroll ── */
   .mob-bottom-nav{
-    display:flex!important;
-    flex-direction:row;
+    display:flex;flex-direction:row;
     position:fixed;left:0;right:0;bottom:0;
-    background:var(--surface);
-    border-top:1px solid var(--border);
-    z-index:200;
-    padding-bottom:env(safe-area-inset-bottom,0px);
-    touch-action:pan-y;
-    overscroll-behavior:none;
-    -webkit-overflow-scrolling:auto;
+    background:var(--surface);border-top:1px solid var(--border);
+    z-index:200;padding-bottom:env(safe-area-inset-bottom,0px);
+    overscroll-behavior:none;touch-action:pan-y;
   }
   .mob-tab{
     flex:1;display:flex;flex-direction:column;
     align-items:center;justify-content:center;
-    gap:3px;padding:8px 4px 6px;
-    cursor:pointer;color:var(--text-dim);
-    border-top:2px solid transparent;
-    transition:color .15s;
-    -webkit-tap-highlight-color:transparent;
+    gap:3px;padding:8px 2px 6px;cursor:pointer;
+    color:var(--text-dim);border-top:2px solid transparent;
+    transition:color .15s;-webkit-tap-highlight-color:transparent;
     user-select:none;
   }
   .mob-tab.active{color:var(--gold);border-top-color:var(--gold)}
@@ -269,37 +258,21 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
 
   /* ── Segmented control ── */
   .seg-control{
-    display:flex;background:var(--surface2);
-    border-radius:10px;padding:3px;margin-bottom:16px;
-    border:1px solid var(--border);
+    display:flex;background:var(--surface2);border-radius:10px;
+    padding:3px;margin-bottom:14px;border:1px solid var(--border);
   }
   .seg-btn{
-    flex:1;padding:8px 10px;border:none;border-radius:8px;
+    flex:1;padding:8px 6px;border:none;border-radius:8px;
     background:none;color:var(--text-dim);cursor:pointer;
-    font-size:12px;font-family:var(--fb);
-    transition:all .15s;text-align:center;
-    -webkit-tap-highlight-color:transparent;
+    font-size:12px;font-family:var(--fb);transition:all .15s;
+    text-align:center;-webkit-tap-highlight-color:transparent;
   }
-  .seg-btn.active{
-    background:var(--surface);color:var(--text);
-    box-shadow:0 1px 4px rgba(0,0,0,.35);
-  }
+  .seg-btn.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.35)}
 
-  /* ── Plus bottom sheet ── */
-  .plus-sheet-overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,.55);
-    backdrop-filter:blur(4px);z-index:300;
-    opacity:0;pointer-events:none;transition:opacity .2s;
-  }
+  /* ── Plus sheet ── */
+  .plus-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:300;opacity:0;pointer-events:none;transition:opacity .2s}
   .plus-sheet-overlay.open{opacity:1;pointer-events:all}
-  .plus-sheet{
-    position:fixed;left:0;right:0;bottom:0;
-    background:var(--surface);border-radius:18px 18px 0 0;
-    border-top:1px solid var(--border);z-index:301;
-    padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
-    transform:translateY(100%);transition:transform .25s ease;
-    overscroll-behavior:contain;
-  }
+  .plus-sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-radius:18px 18px 0 0;border-top:1px solid var(--border);z-index:301;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .25s ease;overscroll-behavior:contain}
   .plus-sheet-overlay.open .plus-sheet{transform:translateY(0)}
   .plus-sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:14px auto 0}
   .plus-sheet-title{font-family:var(--fd);font-size:18px;font-weight:300;color:var(--text);padding:14px 22px 10px;border-bottom:1px solid var(--border)}
@@ -309,6 +282,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
   .plus-sheet-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
   .plus-sheet-name{font-size:14px;color:var(--text)}
   .plus-sheet-desc{font-size:11px;color:var(--text-dim);font-family:var(--fm);margin-top:2px}
+  .sidebar-footer{display:none}
 
   /* ── KPI grids ── */
   .kpi-5,.kpi-4,.kpi-3{grid-template-columns:1fr 1fr !important}
@@ -452,7 +426,10 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
   .mob-show-on-mobile{display:none}
   .mob-bottom-nav{display:none!important}
   .plus-sheet-overlay{display:none!important}
-  #section-marches,#section-actifs{display:none!important}
+}
+@media(min-width:769px){
+  #dashboard-footer{opacity:.7;transition:opacity .2s}
+  #dashboard-footer:hover{opacity:1}
 }
 
 /* Mobile label text under nav icons */
@@ -579,11 +556,11 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
   <!-- DASHBOARD FOOTER -->
   <div id="dashboard-footer" style="margin-top:8px;padding:16px 0 4px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
     <div style="display:flex;gap:8px">
-      <button onclick="exportData()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb);transition:all .15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬇ Export</button>
-      <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb);transition:all .15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
+      <button onclick="exportData()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb)" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬇ Export</button>
+      <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb)" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
       <input type="file" id="importFileDash" accept=".json" style="display:none" onchange="importData(event)">
     </div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.12</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.13</div>
   </div>
   </div>
 
@@ -663,6 +640,28 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
     <div class="panel"><div class="panel-header"><span class="panel-title">Opérations</span></div><div class="panel-body" id="history-list"></div></div>
   </div>
 
+<!-- ─── MOBILE COMPOSITE: Marchés ──────────────────── -->
+<div id="section-marches" class="section" style="display:none">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <div class="seg-control" style="flex:1;margin-bottom:0" id="marches-seg">
+      <button class="seg-btn active" id="seg-bourse" onclick="mobSwitchMarches('bourse',this)">📈 Bourse</button>
+      <button class="seg-btn" id="seg-crypto" onclick="mobSwitchMarches('crypto',this)">₿ Crypto</button>
+    </div>
+    <button class="price-refresh" onclick="refreshAllPrices()" style="font-size:18px;flex-shrink:0" title="Rafraîchir">↻</button>
+  </div>
+  <div id="mob-marches-content"></div>
+</div>
+
+<!-- ─── MOBILE COMPOSITE: Actifs ─────────────────────── -->
+<div id="section-actifs" class="section" style="display:none">
+  <div class="seg-control" id="actifs-seg" style="margin-bottom:12px">
+    <button class="seg-btn active" id="seg-immo" onclick="mobSwitchActifs('immo',this)">🏠 Immo</button>
+    <button class="seg-btn" id="seg-epargne" onclick="mobSwitchActifs('epargne',this)">🏦 Épargne</button>
+    <button class="seg-btn" id="seg-autre" onclick="mobSwitchActifs('autre',this)">✦ Autres</button>
+  </div>
+  <div id="mob-actifs-content"></div>
+</div>
+
 </main>
 </div>
 
@@ -691,6 +690,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
 </div>
 
 <div class="notif" id="notif"></div>
+<button class="mob-fab" id="mob-fab" onclick="mobFabClick()" title="Ajouter">+</button>
 <button class="mob-fab" id="mob-fab" onclick="mobFabClick()" title="Ajouter">+</button>
 
 <script>
@@ -742,13 +742,10 @@ let priceLoading = false;
 const PRICE_CACHE_KEY = 'orion_price_cache';
 function savePriceCache(){
   try{
-    const out = {};
-    const keys = Object.keys(livePrices).filter(function(k){return k.indexOf('__ccy')<0;});
-    for(var i=0;i<keys.length;i++){
-      var k=keys[i];
-      out[k]={price:livePrices[k],ccy:livePrices[k+'__ccy']||null,ts:Date.now(),fx:fxRate};
-    }
-    localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify(out));
+    var out={};
+    var ks=Object.keys(livePrices).filter(function(k){return k.indexOf('__ccy')<0;});
+    for(var i=0;i<ks.length;i++){var k=ks[i];out[k]={price:livePrices[k],ccy:livePrices[k+'__ccy']||null,ts:Date.now(),fx:fxRate};}
+    localStorage.setItem(PRICE_CACHE_KEY,JSON.stringify(out));
   }catch(e){}
 }
 function loadPriceCache(){
@@ -756,21 +753,13 @@ function loadPriceCache(){
     var raw=localStorage.getItem(PRICE_CACHE_KEY);
     if(!raw)return;
     cachedPrices=JSON.parse(raw);
-    var ckeys=Object.keys(cachedPrices);
-    for(var i=0;i<ckeys.length;i++){
-      var k=ckeys[i]; var v=cachedPrices[k];
-      livePrices[k]=v.price;
-      if(v.ccy)livePrices[k+'__ccy']=v.ccy;
-    }
-    if(ckeys.length>0 && cachedPrices[ckeys[0]].fx) fxRate=cachedPrices[ckeys[0]].fx;
+    var cks=Object.keys(cachedPrices);
+    for(var i=0;i<cks.length;i++){var k=cks[i];var v=cachedPrices[k];livePrices[k]=v.price;if(v.ccy)livePrices[k+'__ccy']=v.ccy;}
+    if(cks.length>0&&cachedPrices[cks[0]].fx)fxRate=cachedPrices[cks[0]].fx;
   }catch(e){}
 }
 function isPriceFresh(key){return freshPrices.has(key);}
-function cacheAgeMin(key){
-  var v=cachedPrices[key];
-  if(!v||!v.ts)return null;
-  return Math.round((Date.now()-v.ts)/60000);
-}
+function cacheAgeMin(key){var v=cachedPrices[key];if(!v||!v.ts)return null;return Math.round((Date.now()-v.ts)/60000);}
 let fxRate = 1.08;          // EUR/USD: 1 EUR = fxRate USD (fetched live, fallback 1.08)
 
 async function fetchEurUsd(){
@@ -953,42 +942,16 @@ async function fetchCoinGeckoPrices(ids){
 }
 
 // Yahoo Finance — chaîne de 4 endpoints/proxies pour contourner CORS
-function toStooqT(ticker){
-  var t=ticker.toLowerCase();
-  if(t.slice(-3)==='.pa')return t.slice(0,-3)+'.fr';
-  if(t.slice(-2)==='.l')return t.slice(0,-2)+'.uk';
-  if(t.slice(-3)==='.mi')return t.slice(0,-3)+'.it';
-  if(t.slice(-3)==='.as')return t.slice(0,-3)+'.nl';
-  if(t.slice(-3)==='.sw')return t.slice(0,-3)+'.ch';
-  if(t.indexOf('.')<0)return t+'.us';
-  return t;
-}
-function tickerCcy(ticker){
-  var t=ticker.toLowerCase();
-  if(t.slice(-3)==='.pa'||t.slice(-3)==='.de'||t.slice(-3)==='.mi'||t.slice(-3)==='.as')return'EUR';
-  if(t.slice(-2)==='.l')return'GBP';
-  if(t.slice(-3)==='.sw')return'CHF';
-  return'USD';
-}
+function toStooqT(ticker){var t=ticker.toLowerCase();if(t.slice(-3)==='.pa')return t.slice(0,-3)+'.fr';if(t.slice(-2)==='.l')return t.slice(0,-2)+'.uk';if(t.slice(-3)==='.mi')return t.slice(0,-3)+'.it';if(t.slice(-3)==='.as')return t.slice(0,-3)+'.nl';if(t.slice(-3)==='.sw')return t.slice(0,-3)+'.ch';if(t.indexOf('.')<0)return t+'.us';return t;}
+function tickerCcy(ticker){var t=ticker.toLowerCase();if(t.slice(-3)==='.pa'||t.slice(-3)==='.de'||t.slice(-3)==='.mi'||t.slice(-3)==='.as')return'EUR';if(t.slice(-2)==='.l')return'GBP';if(t.slice(-3)==='.sw')return'CHF';return'USD';}
 async function fetchYahooPrice(ticker){
   const t=ticker.toUpperCase();
   const yU1='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
   const yU2='https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
   const stU='https://stooq.com/q/l/?s='+encodeURIComponent(toStooqT(ticker))+'&f=sd2t2ohlcv&h&e=csv';
   const ao='https://api.allorigins.win/get?url=';
-  function exC(j){
-    const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
-    if(!m||m.regularMarketPrice==null)return null;
-    return{price:m.regularMarketPrice,ccy:(m.currency||'USD').toUpperCase()};
-  }
-  function exS(txt){
-    const lines=(txt||'').trim().split('\n');
-    if(lines.length<2)return null;
-    const v=lines[1].split(',');
-    const p=parseFloat(v[6]);
-    if(!p||isNaN(p)||p<=0)return null;
-    return{price:p,ccy:tickerCcy(ticker)};
-  }
+  function exC(j){const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;if(!m||m.regularMarketPrice==null)return null;return{price:m.regularMarketPrice,ccy:(m.currency||'USD').toUpperCase()};}
+  function exS(txt){const lines=(txt||'').trim().split('\n');if(lines.length<2)return null;const v=lines[1].split(',');const p=parseFloat(v[6]);if(!p||isNaN(p)||p<=0)return null;return{price:p,ccy:tickerCcy(ticker)};}
   const attempts=[
     async function(){const r=await fetch(yU1,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw 0;return exC(await r.json());},
     async function(){const r=await fetch(yU2,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw 0;return exC(await r.json());},
@@ -996,18 +959,7 @@ async function fetchYahooPrice(ticker){
     async function(){const r=await fetch(stU,{signal:AbortSignal.timeout(8000)});if(!r.ok)throw 0;return exS(await r.text());},
     async function(){const r=await fetch(ao+encodeURIComponent(stU),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;const j=await r.json();return exS(j.contents);},
   ];
-  for(const fn of attempts){
-    try{
-      const res=await fn();
-      if(res&&res.price>0){
-        livePrices[t]=res.price;
-        livePrices[t+'__ccy']=res.ccy;
-        freshPrices.add(t);
-        delete priceErrors[t];
-        return;
-      }
-    }catch(e){}
-  }
+  for(const fn of attempts){try{const res=await fn();if(res&&res.price>0){livePrices[t]=res.price;livePrices[t+'__ccy']=res.ccy;freshPrices.add(t);delete priceErrors[t];return;}}catch(e){}}
   priceErrors[t]='sync_error';
 }
 
@@ -1290,17 +1242,12 @@ function priceCell(a){
   const fresh=key?isPriceFresh(key):false;
   const age=key?cacheAgeMin(key):null;
   const ageStr=age!=null?(age<60?age+'min':Math.round(age/60)+'h'):'';
-  if(live!=null&&fresh)
-    return '<div class="price-live"><div class="price-live-dot"></div><span>'+fmtLivePrice(a,live)+'</span></div>';
-  if(live!=null&&!err)
-    return '<div class="price-live" title="Cache'+(ageStr?' \u00b7 '+ageStr:'')+'"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,live)+'</span></div>';
-  if(live!=null&&err)
-    return '<div class="price-live" title="Erreur sync \u2014 valeur en cache"><div class="price-live-dot" style="background:var(--gold)"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,live)+' <span style="font-size:9px;color:var(--gold)">\u26a0</span></span></div>';
-  if(err)
-    return '<div class="price-live"><div class="price-live-dot err"></div><span class="price-err-badge">\u26a0 sync</span></div>';
-  if(a.currentPrice)
-    return '<div class="price-live"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,a.currentPrice)+'</span></div>';
-  return '<span style="color:var(--text-muted);font-family:var(--fm);font-size:11px">—</span>';
+  if(live!=null&&fresh)return'<div class="price-live"><div class="price-live-dot"></div><span>'+fmtLivePrice(a,live)+'</span></div>';
+  if(live!=null&&!err)return'<div class="price-live" title="Cache'+(ageStr?' \xb7 '+ageStr:'')+'"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,live)+'</span></div>';
+  if(live!=null&&err)return'<div class="price-live" title="Erreur sync"><div class="price-live-dot" style="background:var(--gold)"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,live)+' <span style="font-size:9px;color:var(--gold)">\u26a0</span></span></div>';
+  if(err)return'<div class="price-live"><div class="price-live-dot err"></div><span class="price-err-badge">\u26a0 sync</span></div>';
+  if(a.currentPrice)return'<div class="price-live"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">'+fmtLivePrice(a,a.currentPrice)+'</span></div>';
+  return'<span style="color:var(--text-muted);font-family:var(--fm);font-size:11px">\u2014</span>';
 }
 
 // ════════════════════════════════════════════════════
@@ -1515,11 +1462,6 @@ function renderAll(){
   renderEpargne(byCat.epargne||{value:0,invested:0,count:0},totalBrut);
   renderAutre(byCat.autre||{value:0,invested:0,count:0},totalBrut);
   renderDettes(totalDettes);renderHistory();
-  if(isMobile()){
-    syncMobPriceDot();
-    if(mobActiveTab==='marches') renderMarchesContent();
-    if(mobActiveTab==='actifs')  renderActifsContent();
-  }
 }
 
 // ── IMMO ────────────────────────────────────────────
@@ -1851,90 +1793,22 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('clic
 // ════════════════════════════════════════════════════
 function isMobile(){return window.innerWidth<=768;}
 
-// ── MOBILE TAB STATE ──────────────────────────────────────
+// ── MOBILE STATE ──────────────────────────────────────
 var mobActiveTab='dashboard';
 var marchesSubTab='bourse';
 var actifsSubTab='immo';
 
 function initMobileNav(){
-  const nav=document.getElementById('mob-bottom-nav');
+  var nav=document.getElementById('mob-bottom-nav');
   if(nav) nav.style.display=isMobile()?'flex':'none';
-  syncMobPriceDot();
 }
 
-function syncMobPriceDot(){
-  const src=document.getElementById('pb-dot');
-  const dst=document.getElementById('mob-pb-dot');
-  if(src&&dst) dst.className=src.className;
-}
-
-function mobShowTab(tab){
-  if(!isMobile()){
-    const ni=document.querySelector('[data-sec="'+tab+'"]');
-    showSection(tab,ni);
-    return;
-  }
-  mobActiveTab=tab;
-  // Update bottom tab buttons
-  document.querySelectorAll('.mob-tab').forEach(function(t){t.classList.remove('active');});
-  const tabMap={dashboard:'dashboard',marches:'marches',actifs:'actifs',dettes:'dettes',historique:'plus'};
-  const btnId='mobt-'+(tabMap[tab]||'plus');
-  const btn=document.getElementById(btnId);
-  if(btn) btn.classList.add('active');
-  // Hide all sections
-  document.querySelectorAll('.section').forEach(function(s){s.style.display='none';s.classList.remove('active');});
-  // Show relevant section
-  if(tab==='dashboard'){
-    const s=document.getElementById('section-dashboard');
-    if(s){s.style.display='block';s.classList.add('active');}
-  } else if(tab==='marches'){
-    const s=document.getElementById('section-marches');
-    if(s){s.style.display='block';s.classList.add('active');}
-    renderMarchesContent();
-  } else if(tab==='actifs'){
-    const s=document.getElementById('section-actifs');
-    if(s){s.style.display='block';s.classList.add('active');}
-    renderActifsContent();
-  } else if(tab==='dettes'){
-    const s=document.getElementById('section-dettes');
-    if(s){s.style.display='block';s.classList.add('active');}
-  } else if(tab==='historique'){
-    const s=document.getElementById('section-historique');
-    if(s){s.style.display='block';s.classList.add('active');}
-  }
-  renderAll();
-  requestAnimationFrame(function(){ window.scrollTo(0,0); });
-}
-
-function switchMarchesTab(sub,btn){
-  marchesSubTab=sub;
-  document.querySelectorAll('#marches-seg .seg-btn').forEach(function(b){b.classList.remove('active');});
-  if(btn) btn.classList.add('active');
-  const bEl=document.getElementById('marches-bourse-content');
-  const cEl=document.getElementById('marches-crypto-content');
-  if(bEl) bEl.style.display=sub==='bourse'?'block':'none';
-  if(cEl) cEl.style.display=sub==='crypto'?'block':'none';
-  renderMarchesContent();
-  requestAnimationFrame(function(){ window.scrollTo(0,0); });
-}
-
-function switchActifsTab(sub,btn){
-  actifsSubTab=sub;
-  document.querySelectorAll('#actifs-seg .seg-btn').forEach(function(b){b.classList.remove('active');});
-  if(btn) btn.classList.add('active');
-  ['immo','epargne','autre'].forEach(function(k){
-    const el=document.getElementById('actifs-'+k+'-content');
-    if(el) el.style.display=(k===sub)?'block':'none';
-  });
-  renderActifsContent();
-}
-
-// Build a KPI row HTML string for bourse/crypto on mobile
-function buildKpiRow(stats,totalBrut){
-  const pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
-  const pl=stats.invested>0?stats.value-stats.invested:null;
-  const plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
-  return '<div class="kpi-row kpi-4" style="margin-bottom:16px">'
+// ── Build KPI bar HTML from stats ──
+function mobKpi(stats,totalBrut){
+  var pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
+  var pl=stats.invested>0?stats.value-stats.invested:null;
+  var plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
+  return '<div class="kpi-row kpi-4" style="margin-bottom:14px">'
     +'<div class="kpi-card"><div class="kpi-label">Valeur</div><div class="kpi-value" style="font-size:22px">'+fmt(stats.value)+'</div></div>'
     +'<div class="kpi-card"><div class="kpi-label">Investi</div><div class="kpi-value" style="font-size:22px;color:var(--text-dim)">'+(stats.invested>0?fmt(stats.invested):'—')+'</div></div>'
     +'<div class="kpi-card"><div class="kpi-label">+/- value</div><div class="kpi-value" style="font-size:22px;color:'+(pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)')+'">'+( pl!==null?(pl>=0?'+':'')+fmt(pl):'—')+'</div>'+(plP!==null?'<div class="kpi-delta '+(plP>=0?'pos':'neg')+'">'+fmtPct(plP)+'</div>':'')+'</div>'
@@ -1942,132 +1816,237 @@ function buildKpiRow(stats,totalBrut){
     +'</div>';
 }
 
-// Build Bourse content HTML string (no DOM IDs needed)
-function buildBourseHTML(stats,totalBrut){
-  const allB=data.assets.filter(function(a){return a.cat==='bourse';});
-  const filteredB=filterBySearch(allB,'bourse');
-  const bFilter=catSearch['bourse']?filteredB:null;
-  const tabsId='mob-b-tabs-'+Date.now();
-  return '<div class="cat-header" style="margin-bottom:16px">'
-    +'<div class="cat-icon-big" style="background:rgba(76,175,125,.15)">📈</div>'
-    +'<div><div class="cat-title-big" style="color:var(--bourse)">Bourse</div>'
-    +'<div class="topbar-date">Actions, ETF, Obligations</div></div>'
-    +'</div>'
-    +buildKpiRow(stats,totalBrut)
+// ── Build Bourse panel HTML ──
+function mobBuildBourse(stats,totalBrut){
+  var allB=data.assets.filter(function(a){return a.cat==='bourse';});
+  var filteredB=filterBySearch(allB,'bourse');
+  var bFilter=catSearch['bourse']?filteredB:null;
+  return mobKpi(stats,totalBrut)
     +searchBar('bourse',allB.length,(bFilter||allB).length)
     +'<div class="panel" style="margin-bottom:0">'
       +'<div class="sec-tabs">'
-        +'<button class="sec-tab active" onclick="mobSwitchTab(this,\'mob-bc\',\'mob-bl\')">Vue consolidée</button>'
-        +'<button class="sec-tab" onclick="mobSwitchTab(this,\'mob-bl\',\'mob-bc\')">Positions détaillées</button>'
+        +'<button class="sec-tab active" onclick="mobTabToggle(this,\'mob-b-conso\',\'mob-b-lots\')">Vue consolidée</button>'
+        +'<button class="sec-tab" onclick="mobTabToggle(this,\'mob-b-lots\',\'mob-b-conso\')">Positions détaillées</button>'
       +'</div>'
-      +'<div id="mob-bc" class="panel-body">'+renderConsolidatedTable('bourse',bFilter)+'</div>'
-      +'<div id="mob-bl" class="panel-body" style="display:none">'+renderLotsTable('bourse',bFilter)+'</div>'
+      +'<div id="mob-b-conso" class="panel-body">'+renderConsolidatedTable('bourse',bFilter)+'</div>'
+      +'<div id="mob-b-lots" class="panel-body" style="display:none">'+renderLotsTable('bourse',bFilter)+'</div>'
     +'</div>';
 }
 
-// Build Crypto content HTML string
-function buildCryptoHTML(stats,totalBrut){
-  const allC=data.assets.filter(function(a){return a.cat==='crypto';});
-  const filteredC=filterBySearch(allC,'crypto');
-  const cFilter=catSearch['crypto']?filteredC:null;
-  return '<div class="cat-header" style="margin-bottom:16px">'
-    +'<div class="cat-icon-big" style="background:rgba(247,147,26,.15)">₿</div>'
-    +'<div><div class="cat-title-big" style="color:var(--crypto)">Crypto</div>'
-    +'<div class="topbar-date">Actifs numériques & DeFi</div></div>'
-    +'</div>'
-    +buildKpiRow(stats,totalBrut)
+// ── Build Crypto panel HTML ──
+function mobBuildCrypto(stats,totalBrut){
+  var allC=data.assets.filter(function(a){return a.cat==='crypto';});
+  var filteredC=filterBySearch(allC,'crypto');
+  var cFilter=catSearch['crypto']?filteredC:null;
+  return mobKpi(stats,totalBrut)
     +searchBar('crypto',allC.length,(cFilter||allC).length)
     +'<div class="panel" style="margin-bottom:0">'
       +'<div class="sec-tabs">'
-        +'<button class="sec-tab active" onclick="mobSwitchTab(this,\'mob-cc\',\'mob-cl\')">Vue consolidée</button>'
-        +'<button class="sec-tab" onclick="mobSwitchTab(this,\'mob-cl\',\'mob-cc\')">Positions détaillées</button>'
+        +'<button class="sec-tab active" onclick="mobTabToggle(this,\'mob-c-conso\',\'mob-c-lots\')">Vue consolidée</button>'
+        +'<button class="sec-tab" onclick="mobTabToggle(this,\'mob-c-lots\',\'mob-c-conso\')">Positions détaillées</button>'
       +'</div>'
-      +'<div id="mob-cc" class="panel-body">'+renderConsolidatedTable('crypto',cFilter)+'</div>'
-      +'<div id="mob-cl" class="panel-body" style="display:none">'+renderLotsTable('crypto',cFilter)+'</div>'
+      +'<div id="mob-c-conso" class="panel-body">'+renderConsolidatedTable('crypto',cFilter)+'</div>'
+      +'<div id="mob-c-lots" class="panel-body" style="display:none">'+renderLotsTable('crypto',cFilter)+'</div>'
     +'</div>';
 }
 
-// Generic tab switcher for mobile consolidated/lots panels
-function mobSwitchTab(btn,showId,hideId){
+// ── Build Immo HTML ──
+function mobBuildImmo(stats,totalBrut){
+  var allImmo=data.assets.filter(function(a){return a.cat==='immo';}).sort(function(a,b){return assetValue(b)-assetValue(a);});
+  var assets=filterBySearch(allImmo,'immo');
+  var pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
+  var pl=stats.invested>0?stats.value-stats.invested:null,plP=stats.invested>0?((stats.value-stats.invested)/stats.invested*100):null;
+  var SLAB={rp:'Résidence principale',rs:'Résidence secondaire',locatif:'Locatif',scpi:'SCPI'};
+  var html='<div class="kpi-row kpi-4" style="margin-bottom:14px">'
+    +'<div class="kpi-card"><div class="kpi-label">Valeur marché</div><div class="kpi-value" style="font-size:22px">'+fmt(stats.value)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Prix d\'achat</div><div class="kpi-value" style="font-size:22px;color:var(--text-dim)">'+(stats.invested>0?fmt(stats.invested):'—')+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Plus-value</div><div class="kpi-value" style="font-size:22px;color:'+(pl===null?'var(--text-dim)':pl>=0?'var(--green)':'var(--red)')+'">'+( pl!==null?(pl>=0?'+':'')+fmt(pl):'—')+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Part</div><div class="kpi-value" style="font-size:22px;color:var(--gold)">'+pct+'%</div></div>'
+    +'</div>';
+  html+=searchBar('immo',allImmo.length,assets.length);
+  html+='<div class="panel"><div class="panel-header"><span class="panel-title">🏠 Biens</span></div><div class="panel-body">';
+  if(!assets.length){html+='<div class="empty"><div class="empty-icon">🏠</div><div class="empty-text">Aucun bien enregistré.</div></div>';}
+  else{
+    assets.forEach(function(a){
+      var v=assetValue(a),inv=assetInvested(a),pl2=inv>0?v-inv:null,plP2=inv>0?((v-inv)/inv*100):null;
+      html+='<div style="padding:12px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+          +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">'+a.name+'</div>'
+            +(a.subtype?'<div style="margin-top:4px"><span class="badge" style="background:#6e8efb18;color:var(--immo)">'+( SLAB[a.subtype]||a.subtype)+'</span></div>':'')
+          +'</div>'
+          +'<div style="text-align:right;flex-shrink:0">'
+            +'<div style="font-family:var(--fd);font-size:18px">'+fmt(v)+'</div>'
+            +(pl2!==null?'<div style="font-size:11px;font-family:var(--fm);color:'+(pl2>=0?'var(--green)':'var(--red)')+'">'+( pl2>=0?'+':'')+fmt(pl2)+'</div>':'')
+            +'<div style="display:flex;gap:4px;justify-content:flex-end;margin-top:6px">'
+              +'<button class="action-btn" onclick="editAsset(\''+a.id+'\')">✎</button>'
+              +'<button class="action-btn del" onclick="deleteAsset(\''+a.id+'\')">✕</button>'
+            +'</div>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    });
+  }
+  html+='</div></div>';
+  return html;
+}
+
+// ── Build Épargne HTML ──
+function mobBuildEpargne(stats,totalBrut){
+  var allEp=data.assets.filter(function(a){return a.cat==='epargne';}).sort(function(a,b){return assetValue(b)-assetValue(a);});
+  var assets=filterBySearch(allEp,'epargne');
+  var pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
+  var ELAB={livreta:'Livret A',ldds:'LDDS',lep:'LEP',pel:'PEL',cel:'CEL',aveuros:'Assur.-vie €',compte:'Compte',per:'PER',autre:'Autre'};
+  var html='<div class="kpi-row kpi-3" style="margin-bottom:14px">'
+    +'<div class="kpi-card"><div class="kpi-label">Total épargne</div><div class="kpi-value" style="font-size:22px">'+fmt(stats.value)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Part</div><div class="kpi-value" style="font-size:22px;color:var(--gold)">'+pct+'%</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Comptes</div><div class="kpi-value" style="font-size:22px">'+assets.length+'</div></div>'
+    +'</div>';
+  html+=searchBar('epargne',allEp.length,assets.length);
+  html+='<div class="panel"><div class="panel-body">';
+  if(!assets.length){html+='<div class="empty"><div class="empty-icon">🏦</div><div class="empty-text">Aucun compte.</div></div>';}
+  else{
+    assets.forEach(function(a){
+      var v=assetValue(a),poids=stats.value>0?(v/stats.value*100).toFixed(1):0;
+      html+='<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13px;font-weight:500">'+a.name+'</div>'
+          +'<div style="display:flex;gap:6px;margin-top:4px;align-items:center">'
+            +(a.subtype?'<span class="badge" style="background:#c9a84c18;color:var(--gold)">'+( ELAB[a.subtype]||a.subtype)+'</span>':'')
+            +(a.bank?'<span style="font-size:11px;color:var(--text-dim)">'+a.bank+'</span>':'')
+          +'</div>'
+        +'</div>'
+        +'<div style="text-align:right;flex-shrink:0">'
+          +'<div style="font-family:var(--fd);font-size:16px">'+fmt(v)+'</div>'
+          +(a.rate>0?'<div style="font-size:11px;color:var(--gold);font-family:var(--fm)">'+a.rate+'%</div>':'')
+          +'<div style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px">'
+            +'<button class="action-btn" onclick="editAsset(\''+a.id+'\')">✎</button>'
+            +'<button class="action-btn del" onclick="deleteAsset(\''+a.id+'\')">✕</button>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    });
+  }
+  html+='</div></div>';
+  return html;
+}
+
+// ── Build Autres HTML ──
+function mobBuildAutre(stats,totalBrut){
+  var allAu=data.assets.filter(function(a){return a.cat==='autre';}).sort(function(a,b){return assetValue(b)-assetValue(a);});
+  var assets=filterBySearch(allAu,'autre');
+  var pct=totalBrut>0?(stats.value/totalBrut*100).toFixed(1):0;
+  var ALAB={vehicle:'Véhicule',art:'Art & Collections',metals:'Métaux précieux',jewelry:'Bijoux',pe:'Private equity',other:'Autre'};
+  var html='<div class="kpi-row kpi-4" style="margin-bottom:14px">'
+    +'<div class="kpi-card"><div class="kpi-label">Valeur totale</div><div class="kpi-value" style="font-size:22px">'+fmt(stats.value)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Investi</div><div class="kpi-value" style="font-size:22px;color:var(--text-dim)">'+(stats.invested>0?fmt(stats.invested):'—')+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">+/- value</div><div class="kpi-value" style="font-size:22px;color:'+(stats.invested>0?(stats.value-stats.invested>=0?'var(--green)':'var(--red)'):'var(--text-dim)')+'">'+( stats.invested>0?( stats.value-stats.invested>=0?'+':'')+fmt(stats.value-stats.invested):'—')+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Part</div><div class="kpi-value" style="font-size:22px;color:var(--gold)">'+pct+'%</div></div>'
+    +'</div>';
+  html+=searchBar('autre',allAu.length,assets.length);
+  html+='<div class="panel"><div class="panel-body">';
+  if(!assets.length){html+='<div class="empty"><div class="empty-icon">✦</div><div class="empty-text">Aucun actif.</div></div>';}
+  else{
+    assets.forEach(function(a){
+      var v=assetValue(a),inv=assetInvested(a),pl2=inv>0?v-inv:null;
+      html+='<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13px;font-weight:500">'+a.name+'</div>'
+          +(a.subtype?'<div style="margin-top:4px"><span class="badge" style="background:#a855f718;color:var(--autre)">'+( ALAB[a.subtype]||a.subtype)+'</span></div>':'')
+        +'</div>'
+        +'<div style="text-align:right;flex-shrink:0">'
+          +'<div style="font-family:var(--fd);font-size:16px">'+fmt(v)+'</div>'
+          +(pl2!==null?'<div style="font-size:11px;font-family:var(--fm);color:'+(pl2>=0?'var(--green)':'var(--red)')+'">'+( pl2>=0?'+':'')+fmt(pl2)+'</div>':'')
+          +'<div style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px">'
+            +'<button class="action-btn" onclick="editAsset(\''+a.id+'\')">✎</button>'
+            +'<button class="action-btn del" onclick="deleteAsset(\''+a.id+'\')">✕</button>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    });
+  }
+  html+='</div></div>';
+  return html;
+}
+
+// ── Tab toggle for panel sub-tabs ──
+function mobTabToggle(btn,showId,hideId){
   btn.closest('.sec-tabs').querySelectorAll('.sec-tab').forEach(function(t){t.classList.remove('active');});
   btn.classList.add('active');
-  var show=document.getElementById(showId);
-  var hide=document.getElementById(hideId);
-  if(show)show.style.display='block';
-  if(hide)hide.style.display='none';
+  var s=document.getElementById(showId); if(s)s.style.display='block';
+  var h=document.getElementById(hideId); if(h)h.style.display='none';
 }
 
-function renderMarchesContent(){
-  if(!isMobile()) return;
-  const comp=compute();
-  const bDst=document.getElementById('marches-bourse-content');
-  const cDst=document.getElementById('marches-crypto-content');
-  if(bDst) bDst.innerHTML=buildBourseHTML(comp.byCat.bourse||{value:0,invested:0,count:0},comp.totalBrut);
-  if(cDst) cDst.innerHTML=buildCryptoHTML(comp.byCat.crypto||{value:0,invested:0,count:0},comp.totalBrut);
-  syncMobPriceDot();
+// ── Switch Marchés sub (Bourse / Crypto) — rebuild content ──
+function mobSwitchMarches(sub,btn){
+  marchesSubTab=sub;
+  document.querySelectorAll('#marches-seg .seg-btn').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  var comp=compute();
+  var el=document.getElementById('mob-marches-content');
+  if(el) el.innerHTML=(sub==='bourse')
+    ?mobBuildBourse(comp.byCat.bourse||{value:0,invested:0,count:0},comp.totalBrut)
+    :mobBuildCrypto(comp.byCat.crypto||{value:0,invested:0,count:0},comp.totalBrut);
 }
 
-// Build Immo HTML for mobile (delegate to renderImmo but capture output)
-function buildImmoHTML(stats,totalBrut){
-  // Temporarily render into a detached div, then extract
-  const tmp=document.createElement('div');
-  tmp.id='section-immo-tmp';
-  document.body.appendChild(tmp);
-  const realEl=document.getElementById('section-immo');
-  const realId=realEl?realEl.id:'';
-  if(realEl) realEl.id='section-immo-hidden-tmp';
-  tmp.id='section-immo';
-  renderImmo(stats,totalBrut);
-  const html=tmp.innerHTML;
-  tmp.id='section-immo-tmp';
-  if(realEl) realEl.id=realId;
-  document.body.removeChild(tmp);
-  return html;
+// ── Switch Actifs sub (Immo / Épargne / Autres) — rebuild content ──
+function mobSwitchActifs(sub,btn){
+  actifsSubTab=sub;
+  document.querySelectorAll('#actifs-seg .seg-btn').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  var comp=compute();
+  var el=document.getElementById('mob-actifs-content');
+  if(!el)return;
+  if(sub==='immo') el.innerHTML=mobBuildImmo(comp.byCat.immo||{value:0,invested:0,count:0},comp.totalBrut);
+  else if(sub==='epargne') el.innerHTML=mobBuildEpargne(comp.byCat.epargne||{value:0,invested:0,count:0},comp.totalBrut);
+  else if(sub==='autre') el.innerHTML=mobBuildAutre(comp.byCat.autre||{value:0,invested:0,count:0},comp.totalBrut);
 }
 
-function buildEpargneHTML(stats,totalBrut){
-  const tmp=document.createElement('div');
-  document.body.appendChild(tmp);
-  const realEl=document.getElementById('section-epargne');
-  if(realEl) realEl.id='section-epargne-hidden-tmp';
-  tmp.id='section-epargne';
-  renderEpargne(stats,totalBrut);
-  const html=tmp.innerHTML;
-  tmp.id='section-epargne-tmp';
-  if(realEl) realEl.id='section-epargne';
-  document.body.removeChild(tmp);
-  return html;
-}
-
-function buildAutreHTML(stats,totalBrut){
-  const tmp=document.createElement('div');
-  document.body.appendChild(tmp);
-  const realEl=document.getElementById('section-autre');
-  if(realEl) realEl.id='section-autre-hidden-tmp';
-  tmp.id='section-autre';
-  renderAutre(stats,totalBrut);
-  const html=tmp.innerHTML;
-  tmp.id='section-autre-tmp';
-  if(realEl) realEl.id='section-autre';
-  document.body.removeChild(tmp);
-  return html;
-}
-
-function renderActifsContent(){
-  if(!isMobile()) return;
-  const comp=compute();
-  const iDst=document.getElementById('actifs-immo-content');
-  const eDst=document.getElementById('actifs-epargne-content');
-  const aDst=document.getElementById('actifs-autre-content');
-  if(iDst) iDst.innerHTML=buildImmoHTML(comp.byCat.immo||{value:0,invested:0,count:0},comp.totalBrut);
-  if(eDst) eDst.innerHTML=buildEpargneHTML(comp.byCat.epargne||{value:0,invested:0,count:0},comp.totalBrut);
-  if(aDst) aDst.innerHTML=buildAutreHTML(comp.byCat.autre||{value:0,invested:0,count:0},comp.totalBrut);
+// ── Main tab switcher ──
+function mobShowTab(tab){
+  if(!isMobile()){showSection(tab,document.querySelector('[data-sec="'+tab+'"]'));return;}
+  mobActiveTab=tab;
+  // Update nav buttons
+  document.querySelectorAll('.mob-tab').forEach(function(t){t.classList.remove('active');});
+  var btnMap={dashboard:'dashboard',marches:'marches',actifs:'actifs',dettes:'dettes',historique:'plus'};
+  var btn=document.getElementById('mobt-'+(btnMap[tab]||'plus'));
+  if(btn)btn.classList.add('active');
+  // Hide all sections (desktop + mobile composite)
+  document.querySelectorAll('.section').forEach(function(s){s.style.display='none';s.classList.remove('active');});
+  // Show target section
+  var target;
+  if(tab==='marches'||tab==='actifs') target=document.getElementById('section-'+tab);
+  else if(tab==='dettes') target=document.getElementById('section-dettes');
+  else if(tab==='historique') target=document.getElementById('section-historique');
+  else target=document.getElementById('section-dashboard');
+  if(target){target.style.display='block';target.classList.add('active');}
+  // Render content — desktop sections render via renderAll, mobile composites inline
+  if(tab==='marches'){
+    var comp=compute();
+    var el=document.getElementById('mob-marches-content');
+    if(el) el.innerHTML=(marchesSubTab==='bourse')
+      ?mobBuildBourse(comp.byCat.bourse||{value:0,invested:0,count:0},comp.totalBrut)
+      :mobBuildCrypto(comp.byCat.crypto||{value:0,invested:0,count:0},comp.totalBrut);
+  } else if(tab==='actifs'){
+    var comp=compute();
+    var el=document.getElementById('mob-actifs-content');
+    if(el){
+      if(actifsSubTab==='immo') el.innerHTML=mobBuildImmo(comp.byCat.immo||{value:0,invested:0,count:0},comp.totalBrut);
+      else if(actifsSubTab==='epargne') el.innerHTML=mobBuildEpargne(comp.byCat.epargne||{value:0,invested:0,count:0},comp.totalBrut);
+      else el.innerHTML=mobBuildAutre(comp.byCat.autre||{value:0,invested:0,count:0},comp.totalBrut);
+    }
+  } else {
+    renderAll();
+  }
+  // Scroll to top after layout settles
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){ window.scrollTo({top:0,left:0,behavior:'instant'}); });
+  });
 }
 
 function openPlusSheet(){document.getElementById('plus-sheet-overlay').classList.add('open');}
 function closePlusSheet(){document.getElementById('plus-sheet-overlay').classList.remove('open');}
 
-// Smart FAB: context-aware
+// FAB: context aware
 function mobFabClick(){
   if(!isMobile()){openAddAsset();return;}
   if(mobActiveTab==='marches') openAddAsset(marchesSubTab);
@@ -2202,25 +2181,16 @@ loadData();
 loadPriceCache();
 autoSnapshot();
 renderAll();
-initMobileNav();
 // Fetch live prices on load
 const hasMarket=data.assets.some(a=>a.cat==='bourse'||a.cat==='crypto');
 if(hasMarket){refreshAllPrices();}
+initMobileNav();
 
 // Re-render on resize / orientation change (desktop↔mobile switch)
 var _lastMob=isMobile();
 window.addEventListener('resize',function(){
-  const nowMob=isMobile();
-  if(nowMob!==_lastMob){
-    _lastMob=nowMob;
-    renderAll();
-    initMobileNav();
-    if(!nowMob){
-      document.querySelectorAll('.section').forEach(function(s){s.style.display='';});
-      const active=document.querySelector('[data-sec].active');
-      if(active) active.classList.add('active');
-    }
-  }
+  var nowMob=isMobile();
+  if(nowMob!==_lastMob){_lastMob=nowMob;renderAll();initMobileNav();}
 });
 </script>
 
@@ -2243,7 +2213,7 @@ window.addEventListener('resize',function(){
   </div>
 </nav>
 
-<!-- PLUS BOTTOM SHEET -->
+<!-- PLUS SHEET -->
 <div class="plus-sheet-overlay" id="plus-sheet-overlay" onclick="closePlusSheet()">
   <div class="plus-sheet" onclick="event.stopPropagation()">
     <div class="plus-sheet-handle"></div>
@@ -2261,36 +2231,9 @@ window.addEventListener('resize',function(){
       <div><div class="plus-sheet-name">Importer</div><div class="plus-sheet-desc">Charger un fichier JSON</div></div>
     </div>
     <input type="file" id="importFileMob" accept=".json" style="display:none" onchange="importData(event)">
-    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center;letter-spacing:.06em">© 2026 r00tp · v1.12</div>
+    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.13</div>
   </div>
 </div>
 
-<!-- MOBILE COMPOSITE: Marchés (Bourse + Crypto) -->
-<div id="section-marches" class="section" style="display:none">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-    <div class="seg-control" id="marches-seg" style="flex:1;margin-bottom:0">
-      <button class="seg-btn active" id="seg-bourse" onclick="switchMarchesTab('bourse',this)">📈 Bourse</button>
-      <button class="seg-btn" id="seg-crypto" onclick="switchMarchesTab('crypto',this)">₿ Crypto</button>
-    </div>
-    <div class="price-bar" style="flex-shrink:0">
-      <div class="price-bar-dot idle" id="mob-pb-dot"></div>
-      <button class="price-refresh" id="mob-pb-btn" onclick="refreshAllPrices()" style="font-size:16px">↻</button>
-    </div>
-  </div>
-  <div id="marches-bourse-content"></div>
-  <div id="marches-crypto-content" style="display:none"></div>
-</div>
-
-<!-- MOBILE COMPOSITE: Actifs (Immo + Épargne + Autres) -->
-<div id="section-actifs" class="section" style="display:none">
-  <div class="seg-control" id="actifs-seg" style="margin-bottom:12px">
-    <button class="seg-btn active" id="seg-immo" onclick="switchActifsTab('immo',this)">🏠 Immo</button>
-    <button class="seg-btn" id="seg-epargne" onclick="switchActifsTab('epargne',this)">🏦 Épargne</button>
-    <button class="seg-btn" id="seg-autre" onclick="switchActifsTab('autre',this)">✦ Autres</button>
-  </div>
-  <div id="actifs-immo-content"></div>
-  <div id="actifs-epargne-content" style="display:none"></div>
-  <div id="actifs-autre-content" style="display:none"></div>
-</div>
 </body>
 </html>
