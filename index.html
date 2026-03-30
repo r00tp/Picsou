@@ -560,7 +560,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
       <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb)" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
       <input type="file" id="importFileDash" accept=".json" style="display:none" onchange="importData(event)">
     </div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.14</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.15</div>
   </div>
   </div>
 
@@ -584,12 +584,71 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
     <div id="bourse-kpi" class="kpi-row kpi-4" style="margin-bottom:20px"></div>
     <div id="bourse-search-area"></div>
     <div class="panel" style="margin-bottom:0">
-      <div class="sec-tabs">
+      <div class="sec-tabs" style="display:flex;align-items:center">
         <button class="sec-tab active" onclick="switchSecTab('bourse','consolide',this)">Vue consolidée</button>
         <button class="sec-tab" onclick="switchSecTab('bourse','lots',this)">Positions détaillées</button>
+        <button class="sec-tab" onclick="switchSecTab('bourse','dividendes',this)">💰 Dividendes</button>
+        <div style="margin-left:auto;padding-right:8px;display:flex;gap:6px" id="bourse-div-actions" style="display:none">
+          <button class="btn btn-outline btn-xs" id="div-refresh-btn" onclick="fetchAllDividends()" title="Actualiser données dividendes"><span id="div-refresh-icon">↻</span></button>
+        </div>
       </div>
       <div id="bourse-tab-consolide" class="panel-body"></div>
       <div id="bourse-tab-lots" class="panel-body" style="display:none"></div>
+      <div id="bourse-tab-dividendes" class="panel-body" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <select id="div-tax-mode" onchange="renderDividendes()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text-dim);font-size:11px;font-family:var(--fm)">
+              <option value="brut">Brut</option>
+              <option value="cto">Net CTO (PFU 30%)</option>
+              <option value="pea">Net PEA (brut, taxe sortie)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline btn-sm" onclick="openAddDividend()">+ Ajouter perçu</button>
+            <button class="btn btn-outline btn-sm" id="div-refresh-btn" onclick="fetchAllDividends()"><span id="div-refresh-icon">↻</span> Actualiser</button>
+          </div>
+        </div>
+        <!-- KPIs -->
+        <div class="kpi-row kpi-4" id="div-kpi" style="margin-bottom:16px"></div>
+        <!-- Chart -->
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-header"><span class="panel-title">Revenus — 12 mois glissants</span></div>
+          <div class="panel-body">
+            <div style="position:relative;height:240px"><canvas id="div-chart"></canvas></div>
+            <div style="display:flex;gap:14px;margin-top:10px">
+              <div class="legend-item"><div style="width:12px;height:12px;border-radius:3px;background:#c9a84c;flex-shrink:0"></div><span class="legend-label">Projeté</span></div>
+              <div class="legend-item"><div style="width:12px;height:12px;border-radius:3px;background:#4caf7d;flex-shrink:0"></div><span class="legend-label">Reçu</span></div>
+            </div>
+            <div id="div-status" style="margin-top:8px;font-size:11px;font-family:var(--fm);color:var(--text-dim)"></div>
+          </div>
+        </div>
+        <!-- Calendar -->
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-header"><span class="panel-title">Calendrier prévisionnel (12 mois)</span></div>
+          <div class="panel-body" id="div-calendar"></div>
+        </div>
+        <!-- Per-stock -->
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-header"><span class="panel-title">Par action</span></div>
+          <div class="panel-body">
+            <div class="table-wrap">
+              <table><thead><tr>
+                <th>Action</th><th>Env.</th><th class="th-r">Qté</th>
+                <th class="th-r">Div/titre</th><th class="th-r">Fréq.</th>
+                <th class="th-r">Annuel brut</th><th class="th-r">Annuel net</th>
+                <th class="th-r">Prochain</th><th class="th-r">Statut</th>
+              </tr></thead>
+              <tbody id="div-stocks-table"></tbody></table>
+              <div id="div-stocks-empty" class="empty" style="display:none"><div class="empty-icon">💰</div><div class="empty-text">Aucune action à dividende. Cliquez sur Actualiser pour charger les données.</div></div>
+            </div>
+          </div>
+        </div>
+        <!-- Received -->
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Dividendes perçus</span><button class="btn btn-outline btn-sm" onclick="openAddDividend()">+ Ajouter</button></div>
+          <div class="panel-body" id="div-received-list"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -634,7 +693,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
     <div id="dette-empty" class="empty" style="display:none"><div class="empty-icon">✓</div><div class="empty-text">Aucune dette.</div></div>
   </div>
 
-  <!-- HISTORIQUE -->
+
   <div id="section-historique" class="section">
     <div class="topbar"><div><div class="topbar-title">Historique</div><div class="topbar-date">Journal des opérations</div></div></div>
     <div class="panel"><div class="panel-header"><span class="panel-title">Opérations</span></div><div class="panel-body" id="history-list"></div></div>
@@ -646,6 +705,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
     <div class="seg-control" style="flex:1;margin-bottom:0" id="marches-seg">
       <button class="seg-btn active" id="seg-bourse" onclick="mobSwitchMarches('bourse',this)">📈 Bourse</button>
       <button class="seg-btn" id="seg-crypto" onclick="mobSwitchMarches('crypto',this)">₿ Crypto</button>
+      <button class="seg-btn" id="seg-dividendes" onclick="mobSwitchMarches('dividendes',this)">💰 Dividendes</button>
     </div>
     <button class="price-refresh" onclick="refreshAllPrices()" style="font-size:18px;flex-shrink:0" title="Rafraîchir">↻</button>
   </div>
@@ -785,8 +845,8 @@ function eurToUsd(eur){return eur*fxRate;}
 // DATA STORE
 // ════════════════════════════════════════════════════
 const STORE='patrimoine_v5';
-let data={assets:[],dettes:[],history:[],snapshots:[]};
-function loadData(){const r=localStorage.getItem(STORE);if(r)try{data={...data,...JSON.parse(r)};}catch(e){}if(!data.snapshots)data.snapshots=[];}
+let data={assets:[],dettes:[],history:[],snapshots:[],dividendsReceived:[]};
+function loadData(){const r=localStorage.getItem(STORE);if(r)try{data={...data,...JSON.parse(r)};}catch(e){}if(!data.snapshots)data.snapshots=[];if(!data.dividendsReceived)data.dividendsReceived=[];}
 function save(){localStorage.setItem(STORE,JSON.stringify(data));}
 
 const CATS={immo:{label:'Immobilier',icon:'🏠',color:'#6e8efb'},bourse:{label:'Bourse',icon:'📈',color:'#4caf7d'},crypto:{label:'Crypto',icon:'₿',color:'#f7931a'},epargne:{label:'Épargne',icon:'🏦',color:'#c9a84c'},autre:{label:'Autre',icon:'✦',color:'#a855f7'}};
@@ -1142,6 +1202,384 @@ function setWalletChip(val){
   });
 }
 
+
+// ════════════════════════════════════════════════════
+// DIVIDEND ENGINE
+// ════════════════════════════════════════════════════
+let dividendCache={};         // { 'AAPL': { history:[{date,amount}], freq, avgPerPeriod, currency } }
+let dividendLoading=false;
+const DIV_CACHE_KEY='orion_div_cache';
+
+function saveDivCache(){try{localStorage.setItem(DIV_CACHE_KEY,JSON.stringify(dividendCache));}catch(e){}}
+function loadDivCache(){try{const r=localStorage.getItem(DIV_CACHE_KEY);if(r)dividendCache=JSON.parse(r);}catch(e){}}
+
+// Fetch dividend history from Yahoo Finance for a single ticker
+async function fetchDividendHistory(ticker){
+  const t=ticker.toUpperCase();
+  const yUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?range=3y&interval=1mo&events=dividends';
+  const yUrl2='https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?range=3y&interval=1mo&events=dividends';
+  const ao='https://api.allorigins.win/get?url=';
+  const stooqUrl='https://stooq.com/q/d/l/?s='+encodeURIComponent(toStooqT(ticker))+'&i=q'; // quarterly data
+
+  function parseDivs(json){
+    const events=json?.chart?.result?.[0]?.events?.dividends;
+    if(!events)return null;
+    const history=Object.values(events)
+      .map(function(d){return{date:new Date(d.date*1000),amount:d.amount};})
+      .sort(function(a,b){return a.date-b.date;});
+    return history.length?history:null;
+  }
+
+  const attempts=[
+    async function(){const r=await fetch(yUrl,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw 0;return parseDivs(await r.json());},
+    async function(){const r=await fetch(yUrl2,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw 0;return parseDivs(await r.json());},
+    async function(){const r=await fetch(ao+encodeURIComponent(yUrl2),{signal:AbortSignal.timeout(14000)});if(!r.ok)throw 0;const j=await r.json();return parseDivs(JSON.parse(j.contents));},
+  ];
+
+  for(const fn of attempts){
+    try{
+      const history=await fn();
+      if(history&&history.length){
+        const analysis=analyzeDividends(history,ticker);
+        dividendCache[t]=analysis;
+        saveDivCache();
+        return analysis;
+      }
+    }catch(e){}
+  }
+  dividendCache[t]={history:[],freq:null,avgPerPeriod:0,annual:0,currency:'EUR',error:true};
+  saveDivCache();
+  return dividendCache[t];
+}
+
+// Analyze history: detect frequency, compute average, project next dates
+function analyzeDividends(history,ticker){
+  if(!history||!history.length)return{history:[],freq:null,avgPerPeriod:0,annual:0,currency:'EUR'};
+  // Detect currency from ticker
+  const ccy=tickerCcy(ticker);
+  // Use last 8 dividends max for average (avoid old outliers)
+  const recent=history.slice(-8);
+  const avgAmount=recent.reduce(function(s,d){return s+d.amount;},0)/recent.length;
+
+  // Detect frequency from gaps between payments
+  let freq='annual',perYear=1;
+  if(history.length>=2){
+    const gaps=[];
+    for(let i=1;i<Math.min(history.length,6);i++){
+      gaps.push((history[i].date-history[i-1].date)/(1000*60*60*24));
+    }
+    const avgGap=gaps.reduce(function(s,g){return s+g;},0)/gaps.length;
+    if(avgGap<50){freq='monthly';perYear=12;}
+    else if(avgGap<120){freq='quarterly';perYear=4;}
+    else if(avgGap<240){freq='semi-annual';perYear=2;}
+    else{freq='annual';perYear=1;}
+  }
+  const annual=avgAmount*perYear;
+
+  // Project next 14 payment dates from today
+  const today=new Date();
+  const lastDate=history[history.length-1].date;
+  const intervalDays=365/perYear;
+  const projected=[];
+  let nextDate=new Date(lastDate);
+  // advance to first future date
+  while(nextDate<=today){nextDate=new Date(nextDate.getTime()+intervalDays*86400000);}
+  for(let i=0;i<14;i++){
+    projected.push({date:new Date(nextDate),amount:avgAmount,projected:true});
+    nextDate=new Date(nextDate.getTime()+intervalDays*86400000);
+  }
+
+  return{history,freq,perYear,avgPerPeriod:avgAmount,annual,currency:ccy,projected};
+}
+
+// Fetch for all bourse assets with tickers
+async function fetchAllDividends(){
+  if(dividendLoading)return;
+  dividendLoading=true;
+  const btn=document.getElementById('div-refresh-btn');
+  const icon=document.getElementById('div-refresh-icon');
+  if(icon)icon.className='price-refresh spinning';
+  const tickers=[...new Set(data.assets.filter(function(a){return a.cat==='bourse'&&a.ticker;}).map(function(a){return a.ticker.toUpperCase();}))];
+  const status=document.getElementById('div-status');
+  if(status)status.textContent='Chargement des données dividendes…';
+  await Promise.allSettled(tickers.map(fetchDividendHistory));
+  dividendLoading=false;
+  if(icon)icon.className='price-refresh';
+  if(status)status.textContent='Données mises à jour · '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  renderDividendes();
+}
+
+// Tax calculation
+function applyTax(gross,enveloppe,taxMode){
+  if(taxMode==='brut')return gross;
+  if(taxMode==='pea')return gross; // PEA: taxed at withdrawal, display brut
+  // CTO: PFU 30%
+  return gross*0.70;
+}
+function taxLabel(enveloppe,taxMode){
+  if(taxMode==='brut')return'Brut';
+  if(enveloppe==='pea')return'Brut (PEA)';
+  return'Net −30%';
+}
+
+// Get consolidated positions per ticker (sum quantities across lots)
+function getConsolidatedBourse(){
+  const byTicker={};
+  data.assets.filter(function(a){return a.cat==='bourse'&&a.ticker;}).forEach(function(a){
+    const t=a.ticker.toUpperCase();
+    if(!byTicker[t])byTicker[t]={ticker:t,name:a.name,qty:0,enveloppe:a.enveloppe,lots:[]};
+    byTicker[t].qty+=a.quantity||0;
+    if(!byTicker[t].enveloppe)byTicker[t].enveloppe=a.enveloppe;
+    byTicker[t].lots.push(a);
+  });
+  return Object.values(byTicker);
+}
+
+// Build 12-month projection (month by month)
+function buildMonthlyProjection(taxMode){
+  const today=new Date();
+  const months=[];
+  for(let i=0;i<12;i++){
+    const d=new Date(today.getFullYear(),today.getMonth()+i,1);
+    months.push({year:d.getFullYear(),month:d.getMonth(),label:d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'}),projected:0,received:0});
+  }
+
+  // Fill projected from dividend cache
+  const positions=getConsolidatedBourse();
+  positions.forEach(function(pos){
+    const cache=dividendCache[pos.ticker];
+    if(!cache||!cache.projected||cache.error)return;
+    cache.projected.forEach(function(ev){
+      const m=ev.date.getMonth(),y=ev.date.getFullYear();
+      const idx=months.findIndex(function(mo){return mo.month===m&&mo.year===y;});
+      if(idx>=0){
+        var gross=ev.amount*pos.qty;
+        // convert to EUR if USD
+        if(cache.currency==='USD'||cache.currency==='GBX')gross=usdToEur(gross);
+        months[idx].projected+=applyTax(gross,pos.enveloppe,taxMode);
+      }
+    });
+  });
+
+  // Fill received from manual entries
+  data.dividendsReceived.forEach(function(d){
+    const date=new Date(d.date);
+    const m=date.getMonth(),y=date.getFullYear();
+    const idx=months.findIndex(function(mo){return mo.month===m&&mo.year===y;});
+    if(idx>=0)months[idx].received+=applyTax(d.amount,d.enveloppe,taxMode);
+  });
+
+  return months;
+}
+
+// Next payment per ticker
+function nextPayment(ticker){
+  const cache=dividendCache[ticker.toUpperCase()];
+  if(!cache||!cache.projected||!cache.projected.length)return null;
+  const today=new Date();
+  return cache.projected.find(function(p){return p.date>today;})||null;
+}
+
+// ── RENDER DIVIDENDES SECTION ──
+let divChart=null;
+function renderDividendes(){
+  if(!document.getElementById('div-chart'))return;
+  const taxMode=document.getElementById('div-tax-mode')?.value||'brut';
+  const positions=getConsolidatedBourse();
+  const months=buildMonthlyProjection(taxMode);
+
+  // ── KPIs ──
+  const annualGross=positions.reduce(function(s,pos){
+    const cache=dividendCache[pos.ticker];
+    if(!cache||cache.error||!cache.annual)return s;
+    var gross=cache.annual*pos.qty;
+    if(cache.currency==='USD')gross=usdToEur(gross);
+    return s+applyTax(gross,pos.enveloppe,taxMode);
+  },0);
+  const next30=months[0].projected+months[1].projected;
+  const totalReceived=data.dividendsReceived.reduce(function(s,d){return s+applyTax(d.amount,d.enveloppe,taxMode);},0);
+  const stocksWithDiv=positions.filter(function(p){const c=dividendCache[p.ticker];return c&&!c.error&&c.annual>0;}).length;
+
+  document.getElementById('div-kpi').innerHTML=
+    '<div class="kpi-card primary"><div class="kpi-label">Revenus annuels estimés</div><div class="kpi-value">'+fmt(annualGross)+'</div><div class="kpi-sub">'+stocksWithDiv+' action'+(stocksWithDiv>1?'s':'')+' à dividendes</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">30 prochains jours</div><div class="kpi-value" style="font-size:26px">'+fmt(next30)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Reçus (total)</div><div class="kpi-value" style="font-size:26px;color:var(--green)">'+fmt(totalReceived)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Yield moyen</div><div class="kpi-value" style="font-size:26px;color:var(--gold)">'+(function(){
+      var totalVal=positions.reduce(function(s,p){return s+assetValue(data.assets.find(function(a){return a.cat==='bourse'&&a.ticker===p.ticker;})||{});},0);
+      return totalVal>0?(annualGross/totalVal*100).toFixed(2)+'%':'—';
+    }())+'</div></div>';
+
+  // ── Chart ──
+  const ctx=document.getElementById('div-chart').getContext('2d');
+  if(divChart)divChart.destroy();
+  divChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:months.map(function(m){return m.label;}),
+      datasets:[
+        {label:'Projeté',data:months.map(function(m){return m.projected;}),backgroundColor:'rgba(201,168,76,.45)',borderColor:'#c9a84c',borderWidth:1.5,borderRadius:4},
+        {label:'Reçu',data:months.map(function(m){return m.received;}),backgroundColor:'rgba(76,175,125,.55)',borderColor:'#4caf7d',borderWidth:1.5,borderRadius:4},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{...{backgroundColor:'#1a1e28',borderColor:'#252a38',borderWidth:1,titleColor:'#e8e6df',bodyColor:'#7a7d8a',padding:10},callbacks:{label:function(c){return' '+c.dataset.label+' : '+fmt(c.raw);}}}},
+      scales:{
+        x:{grid:{color:'rgba(37,42,56,.6)'},ticks:{color:'#3d4155',font:{family:'DM Mono',size:10},maxRotation:0}},
+        y:{grid:{color:'rgba(37,42,56,.6)'},ticks:{color:'#3d4155',font:{family:'DM Mono',size:10},callback:function(v){return fmt(v);}}}
+      }
+    }
+  });
+
+  // ── Calendar ──
+  const calEl=document.getElementById('div-calendar');
+  const allProjected=[];
+  positions.forEach(function(pos){
+    const cache=dividendCache[pos.ticker];
+    if(!cache||cache.error||!cache.projected)return;
+    const today=new Date();
+    const cutoff=new Date(today.getFullYear(),today.getMonth()+12,today.getDate());
+    cache.projected.filter(function(p){return p.date>today&&p.date<cutoff;}).forEach(function(p){
+      var gross=p.amount*pos.qty;
+      if(cache.currency==='USD')gross=usdToEur(gross);
+      allProjected.push({date:p.date,ticker:pos.ticker,name:pos.name,qty:pos.qty,amount:applyTax(gross,pos.enveloppe,taxMode),enveloppe:pos.enveloppe,freq:cache.freq});
+    });
+  });
+  allProjected.sort(function(a,b){return a.date-b.date;});
+  if(!allProjected.length){
+    calEl.innerHTML='<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Actualisez les données pour voir le calendrier prévisionnel.</div></div>';
+  } else {
+    const ENV_COLORS_DIV={pea:'rgba(110,142,251,.15)',cto:'rgba(76,175,125,.15)',av:'rgba(201,168,76,.15)',per:'rgba(168,85,247,.15)'};
+    const ENV_TEXT_DIV={pea:'#6e8efb',cto:'#4caf7d',av:'#c9a84c',per:'#a855f7'};
+    const FREQ_FR={annual:'Annuel',semiannual:'Semestriel','semi-annual':'Semestriel',quarterly:'Trimestriel',monthly:'Mensuel'};
+    calEl.innerHTML='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Action</th><th>Enveloppe</th><th class="th-r">Fréq.</th><th class="th-r">Montant estimé</th></tr></thead><tbody>'
+      +allProjected.map(function(ev){
+        const dStr=ev.date.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+        const env=ev.enveloppe||'';
+        const envHtml=env?'<span class="env-pill" style="background:'+(ENV_COLORS_DIV[env]||'rgba(255,255,255,.05)')+';color:'+(ENV_TEXT_DIV[env]||'var(--text-dim)')+'">'+( ENV_LABELS[env]||env)+'</span>':'—';
+        return'<tr><td class="td-mono" style="font-size:11px;color:var(--text-dim)">'+dStr+'</td>'
+          +'<td><div style="font-size:13px">'+ev.name+'</div><div style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">'+ev.ticker+'</div></td>'
+          +'<td>'+envHtml+'</td>'
+          +'<td class="td-r" style="font-size:11px;color:var(--text-dim)">'+( FREQ_FR[ev.freq]||'—')+'</td>'
+          +'<td class="td-r" style="color:var(--gold)">~'+fmt(ev.amount)+'</td>'
+          +'</tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+
+  // ── Per-stock table ──
+  const tbody=document.getElementById('div-stocks-table');
+  const emEl=document.getElementById('div-stocks-empty');
+  const FREQ_FR2={annual:'Annuel',semiannual:'Semestriel','semi-annual':'Semestriel',quarterly:'Trimestriel',monthly:'Mensuel'};
+  const rows=positions.map(function(pos){
+    const cache=dividendCache[pos.ticker];
+    if(!cache)return{pos,annual:0,loaded:false};
+    var annualGrossPos=cache.annual*pos.qty;
+    if(cache.currency==='USD')annualGrossPos=usdToEur(annualGrossPos);
+    const annualNet=applyTax(annualGrossPos,pos.enveloppe,taxMode);
+    const next=nextPayment(pos.ticker);
+    return{pos,cache,annual:annualGrossPos,annualNet,next,loaded:true,hasDividend:!cache.error&&cache.annual>0};
+  }).filter(function(r){return r.hasDividend;});
+
+  if(!rows.length){tbody.innerHTML='';emEl.style.display='block';}
+  else{
+    emEl.style.display='none';
+    tbody.innerHTML=rows.map(function(r){
+      const c=r.cache;
+      const env=r.pos.enveloppe||'';
+      const envHtml=env?'<span class="env-pill" style="background:'+(ENV_COLORS[env]||'rgba(255,255,255,.05)')+';color:'+(ENV_TEXT[env]||'var(--text-dim)')+'">'+( ENV_LABELS[env]||env)+'</span>':'—';
+      const nextStr=r.next?r.next.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'—';
+      const loaded=!!c&&!c.error;
+      const loadedBadge=loaded
+        ?'<span style="color:var(--green);font-size:10px;font-family:var(--fm)">● Données chargées</span>'
+        :'<span style="color:var(--text-muted);font-size:10px;font-family:var(--fm)">○ Non chargé</span>';
+      return'<tr>'
+        +'<td><div>'+r.pos.name+'</div><div style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">'+r.pos.ticker+'</div></td>'
+        +'<td>'+envHtml+'</td>'
+        +'<td class="td-r td-mono">'+r.pos.qty.toLocaleString('fr-FR')+'</td>'
+        +'<td class="td-r">'+( loaded?fmt(c.avgPerPeriod):'—')+'</td>'
+        +'<td class="td-r" style="font-size:11px;color:var(--text-dim)">'+( loaded?(FREQ_FR2[c.freq]||'—'):'—')+'</td>'
+        +'<td class="td-r">'+( loaded?fmt(r.annual):'—')+'</td>'
+        +'<td class="td-r" style="color:var(--gold)">'+( loaded?fmt(r.annualNet):'—')+'</td>'
+        +'<td class="td-r" style="font-size:11px;color:var(--text-dim)">'+nextStr+'</td>'
+        +'<td class="td-r">'+loadedBadge+'</td>'
+        +'</tr>';
+    }).join('');
+  }
+
+  // ── Received list ──
+  const recEl=document.getElementById('div-received-list');
+  if(!data.dividendsReceived.length){
+    recEl.innerHTML='<div class="empty"><div class="empty-icon">📥</div><div class="empty-text">Aucun dividende saisi. Cliquez sur "+ Ajouter" pour enregistrer un versement perçu.</div></div>';
+  } else {
+    const sorted=[...data.dividendsReceived].sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+    recEl.innerHTML='<div class="table-wrap"><table><thead><tr><th>Date</th><th>Action</th><th>Enveloppe</th><th class="th-r">Brut</th><th class="th-r">Net</th><th></th></tr></thead><tbody>'
+      +sorted.map(function(d){
+        const env=d.enveloppe||'';
+        const envHtml=env?'<span class="env-pill" style="background:'+(ENV_COLORS[env]||'rgba(255,255,255,.05)')+';color:'+(ENV_TEXT[env]||'var(--text-dim)')+'">'+( ENV_LABELS[env]||env)+'</span>':'—';
+        const net=applyTax(d.amount,'cto','cto'); // received always apply PFU unless PEA
+        return'<tr>'
+          +'<td class="td-mono" style="font-size:11px;color:var(--text-dim)">'+new Date(d.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})+'</td>'
+          +'<td><div>'+d.ticker+'</div></td>'
+          +'<td>'+envHtml+'</td>'
+          +'<td class="td-r">'+fmt(d.amount)+'</td>'
+          +'<td class="td-r" style="color:var(--green)">'+( env==='pea'?'<span style="font-size:10px;color:var(--text-dim)">PEA</span>':fmt(net))+'</td>'
+          +'<td><button class="action-btn del" onclick="deleteDividendReceived(\''+d.id+'\')">✕</button></td>'
+          +'</tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+}
+
+// ── MODAL: Add received dividend ──
+let editingDivId=null;
+function openAddDividend(){
+  editingDivId=null;
+  // Reuse modal-dette for simplicity — build body
+  document.getElementById('modal-dette-title').textContent='Dividende perçu';
+  document.getElementById('modal-dette').querySelector('.modal-body').innerHTML=`
+    <div class="fg"><label>Action (ticker ou nom)</label><input type="text" id="ddiv-ticker" placeholder="AAPL, MC.PA…" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div>
+    <div class="fr2">
+      <div class="fg"><label>Montant brut reçu (€)</label><input type="number" id="ddiv-amount" placeholder="42.50" step="0.01"></div>
+      <div class="fg"><label>Enveloppe</label><select id="ddiv-env"><option value="cto">CTO</option><option value="pea">PEA</option><option value="av">Assur.-vie</option><option value="per">PER</option></select></div>
+    </div>
+    <div class="fg"><label>Date de versement</label><input type="date" id="ddiv-date" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div class="fg"><label>Notes</label><input type="text" id="ddiv-notes" placeholder="Q1 2026…"></div>
+  `;
+  document.getElementById('modal-dette').querySelector('.modal-footer').innerHTML=
+    '<button class="btn btn-outline" onclick="closeModal(\'dette\')">Annuler</button>'
+    +'<button class="btn btn-gold" onclick="saveDividendReceived()">Enregistrer</button>';
+  // Pre-fill enveloppe from most common asset
+  const bourseAssets=data.assets.filter(function(a){return a.cat==='bourse';});
+  if(bourseAssets.length)document.getElementById('ddiv-env').value=bourseAssets[0].enveloppe||'cto';
+  document.getElementById('modal-dette').classList.add('open');
+}
+
+function saveDividendReceived(){
+  const ticker=document.getElementById('ddiv-ticker').value.trim().toUpperCase();
+  const amount=parseFloat(document.getElementById('ddiv-amount').value);
+  if(!ticker||isNaN(amount)||amount<=0){notify('Veuillez saisir un ticker et un montant',false);return;}
+  const entry={
+    id:Date.now().toString(),
+    ticker,
+    amount,
+    enveloppe:document.getElementById('ddiv-env').value,
+    date:document.getElementById('ddiv-date').value,
+    notes:document.getElementById('ddiv-notes').value
+  };
+  data.dividendsReceived.push(entry);
+  save();
+  closeModal('dette');
+  renderDividendes();
+  notify('Dividende enregistré ✓',true);
+}
+
+function deleteDividendReceived(id){
+  if(!confirm('Supprimer ce dividende ?'))return;
+  data.dividendsReceived=data.dividendsReceived.filter(function(d){return d.id!==id;});
+  save();
+  renderDividendes();
+}
+
 // ════════════════════════════════════════════════════
 // SNAPSHOTS
 // ════════════════════════════════════════════════════
@@ -1438,6 +1876,9 @@ function switchSecTab(cat,tab,btn){
   btn.closest('.sec-tabs').querySelectorAll('.sec-tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
   document.getElementById(cat+'-tab-consolide').style.display=tab==='consolide'?'block':'none';
   document.getElementById(cat+'-tab-lots').style.display=tab==='lots'?'block':'none';
+  var divTab=document.getElementById(cat+'-tab-dividendes');
+  if(divTab)divTab.style.display=tab==='dividendes'?'block':'none';
+  if(cat==='bourse'&&tab==='dividendes')renderDividendes();
 }
 
 // ════════════════════════════════════════════════════
@@ -1566,6 +2007,121 @@ function renderHistory(){
   el.innerHTML=data.history.slice(0,60).map(h=>{const col=(CATS[h.cat]||{color:'#7a7d8a'}).color;const isDel=h.action==='delete';return`<div class="history-item"><div class="history-icon" style="background:${col}22;color:${col}">${isDel?'✕':h.action==='edit'?'✎':'+'}</div><div class="history-info"><div class="history-name">${h.name}</div><div class="history-date">${lbl[h.action]||h.action} · ${new Date(h.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div></div>${h.value?`<div style="font-family:var(--fm);font-size:13px;color:${isDel?'var(--red)':'var(--text)'}">${fmt(h.value)}</div>`:''}</div>`;}).join('');
 }
 
+
+// ── Mobile Dividendes builder ──
+function mobBuildDividendes(){
+  var taxMode=(document.getElementById('div-tax-mode')||{}).value||'brut';
+  var html='';
+
+  // Top controls
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap">';
+  html+='<select id="div-tax-mode-mob" onchange="document.getElementById(\'div-tax-mode\')&&(document.getElementById(\'div-tax-mode\').value=this.value);mobSwitchMarches(\'dividendes\',document.getElementById(\'seg-dividendes\'))" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:var(--fb)">'
+    +'<option value="brut"'+(taxMode==='brut'?' selected':'')+'>Brut</option>'
+    +'<option value="cto"'+(taxMode==='cto'?' selected':'')+'>Net CTO (PFU 30%)</option>'
+    +'<option value="pea"'+(taxMode==='pea'?' selected':'')+'>Net PEA</option>'
+  +'</select>';
+  html+='<div style="display:flex;gap:6px">'
+    +'<button class="btn btn-outline btn-sm" onclick="fetchAllDividends().then(function(){mobSwitchMarches(\'dividendes\',document.getElementById(\'seg-dividendes\'))})">↻</button>'
+    +'<button class="btn btn-gold btn-sm" onclick="openAddDividend()">+ Perçu</button>'
+  +'</div>';
+  html+='</div>';
+
+  // KPIs
+  var positions=getConsolidatedBourse();
+  var annualTotal=positions.reduce(function(s,pos){
+    var cache=dividendCache[pos.ticker];
+    if(!cache||cache.error||!cache.annual)return s;
+    var gross=cache.annual*pos.qty;
+    if(cache.currency==='USD')gross=usdToEur(gross);
+    return s+applyTax(gross,pos.enveloppe,taxMode);
+  },0);
+  var totalReceived=data.dividendsReceived.reduce(function(s,d){return s+applyTax(d.amount,d.enveloppe,taxMode);},0);
+  var stocksWithDiv=positions.filter(function(p){var c=dividendCache[p.ticker];return c&&!c.error&&c.annual>0;}).length;
+  html+='<div class="kpi-row kpi-4" style="margin-bottom:14px">'
+    +'<div class="kpi-card primary"><div class="kpi-label">Revenus annuels</div><div class="kpi-value">'+fmt(annualTotal)+'</div><div class="kpi-sub">'+stocksWithDiv+' action'+(stocksWithDiv>1?'s':'')+' à dividendes</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Reçus total</div><div class="kpi-value" style="font-size:22px;color:var(--green)">'+fmt(totalReceived)+'</div></div>'
+    +'</div>';
+
+  // Chart placeholder — rendered after injection via rAF
+  html+='<div class="panel" style="margin-bottom:14px">'
+    +'<div class="panel-header"><span class="panel-title">12 mois glissants</span></div>'
+    +'<div class="panel-body">'
+      +'<div style="position:relative;height:200px"><canvas id="div-chart-mob"></canvas></div>'
+      +'<div style="display:flex;gap:12px;margin-top:8px">'
+        +'<div class="legend-item"><div style="width:10px;height:10px;border-radius:2px;background:#c9a84c;flex-shrink:0"></div><span class="legend-label">Projeté</span></div>'
+        +'<div class="legend-item"><div style="width:10px;height:10px;border-radius:2px;background:#4caf7d;flex-shrink:0"></div><span class="legend-label">Reçu</span></div>'
+      +'</div>'
+      +'<div id="div-status-mob" style="margin-top:6px;font-size:11px;font-family:var(--fm);color:var(--text-dim)"></div>'
+    +'</div>'
+  +'</div>';
+
+  // Calendar — next 6 events
+  var allProjected=[];
+  positions.forEach(function(pos){
+    var cache=dividendCache[pos.ticker];
+    if(!cache||cache.error||!cache.projected)return;
+    var today=new Date(),cutoff=new Date(today.getFullYear(),today.getMonth()+6,today.getDate());
+    cache.projected.filter(function(p){return p.date>today&&p.date<cutoff;}).forEach(function(p){
+      var gross=p.amount*pos.qty;
+      if(cache.currency==='USD')gross=usdToEur(gross);
+      allProjected.push({date:p.date,name:pos.name,ticker:pos.ticker,amount:applyTax(gross,pos.enveloppe,taxMode)});
+    });
+  });
+  allProjected.sort(function(a,b){return a.date-b.date;});
+  html+='<div class="panel" style="margin-bottom:14px"><div class="panel-header"><span class="panel-title">Prochains versements</span></div><div class="panel-body">';
+  if(!allProjected.length){
+    html+='<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Actualisez les données pour voir le calendrier.</div></div>';
+  } else {
+    html+=allProjected.slice(0,8).map(function(ev){
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">'
+        +'<div><div style="font-size:13px">'+ev.name+'</div><div style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">'+ev.ticker+' · '+ev.date.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+'</div></div>'
+        +'<div style="font-family:var(--fd);font-size:16px;color:var(--gold)">~'+fmt(ev.amount)+'</div>'
+      +'</div>';
+    }).join('');
+  }
+  html+='</div></div>';
+
+  // Received log (last 5)
+  html+='<div class="panel"><div class="panel-header"><span class="panel-title">Dividendes perçus</span></div><div class="panel-body">';
+  if(!data.dividendsReceived.length){
+    html+='<div class="empty"><div class="empty-icon">📥</div><div class="empty-text">Aucun dividende saisi.</div></div>';
+  } else {
+    var sorted=[...data.dividendsReceived].sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+    html+=sorted.slice(0,8).map(function(d){
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">'
+        +'<div><div style="font-size:13px">'+d.ticker+'</div><div style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">'+new Date(d.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})+(d.enveloppe?' · '+(ENV_LABELS[d.enveloppe]||d.enveloppe):'')+'</div></div>'
+        +'<div style="text-align:right"><div style="font-family:var(--fd);font-size:16px;color:var(--green)">'+fmt(d.amount)+'</div>'
+          +'<button class="action-btn del" onclick="deleteDividendReceived(\''+d.id+'\');mobSwitchMarches(\'dividendes\',document.getElementById(\'seg-dividendes\'))">✕</button>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+  html+='</div></div>';
+
+  // Schedule chart render after DOM injection
+  var taxModeCapture=taxMode;
+  requestAnimationFrame(function(){
+    var ctx=document.getElementById('div-chart-mob');
+    if(!ctx)return;
+    var months=buildMonthlyProjection(taxModeCapture);
+    if(window._mobDivChart) window._mobDivChart.destroy();
+    window._mobDivChart=new Chart(ctx.getContext('2d'),{
+      type:'bar',
+      data:{
+        labels:months.map(function(m){return m.label;}),
+        datasets:[
+          {label:'Projeté',data:months.map(function(m){return m.projected;}),backgroundColor:'rgba(201,168,76,.45)',borderColor:'#c9a84c',borderWidth:1.5,borderRadius:4},
+          {label:'Reçu',data:months.map(function(m){return m.received;}),backgroundColor:'rgba(76,175,125,.55)',borderColor:'#4caf7d',borderWidth:1.5,borderRadius:4},
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1e28',borderColor:'#252a38',borderWidth:1,titleColor:'#e8e6df',bodyColor:'#7a7d8a',padding:8,callbacks:{label:function(ctx){return' '+ctx.dataset.label+' : '+fmt(ctx.raw);}}}},
+        scales:{x:{grid:{color:'rgba(37,42,56,.6)'},ticks:{color:'#3d4155',font:{family:'DM Mono',size:9},maxRotation:0,maxTicksLimit:6}},y:{grid:{color:'rgba(37,42,56,.6)'},ticks:{color:'#3d4155',font:{family:'DM Mono',size:9},callback:function(v){return fmt(v);}}}}}
+    });
+  });
+  return html;
+}
+
 // ════════════════════════════════════════════════════
 // NAVIGATION
 // ════════════════════════════════════════════════════
@@ -1575,6 +2131,7 @@ function showSection(id,navEl){
   document.getElementById('section-'+id).classList.add('active');
   const ni=navEl||document.querySelector(`[data-sec="${id}"]`);if(ni)ni.classList.add('active');
   renderAll();
+  // dividendes renders via switchSecTab when Bourse tab is clicked
 }
 
 // ════════════════════════════════════════════════════
@@ -1782,7 +2339,7 @@ function addHistory(action,item){data.history.unshift({action,name:item.name,cat
 // EXPORT / IMPORT
 // ════════════════════════════════════════════════════
 function exportData(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='patrimoine_'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);notify('Export réussi ✓',true);}
-function importData(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const imp=JSON.parse(e.target.result);if(!imp.assets||!imp.dettes)throw new Error();data={assets:[],dettes:[],history:[],snapshots:[],...imp};save();renderAll();notify(`Import — ${data.assets.length} actifs`,true);refreshAllPrices();}catch{notify('Fichier invalide',false);}};reader.readAsText(file);event.target.value='';}
+function importData(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const imp=JSON.parse(e.target.result);if(!imp.assets||!imp.dettes)throw new Error();data={assets:[],dettes:[],history:[],snapshots:[],dividendsReceived:[],...imp};save();renderAll();notify(`Import — ${data.assets.length} actifs`,true);refreshAllPrices();}catch{notify('Fichier invalide',false);}};reader.readAsText(file);event.target.value='';}
 function notify(msg,success){const el=document.getElementById('notif');el.textContent=msg;el.className='notif show'+(success?' success':'');setTimeout(()=>el.className='notif',4000);}
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
@@ -1988,9 +2545,10 @@ function mobSwitchMarches(sub,btn){
   if(btn)btn.classList.add('active');
   var comp=compute();
   var el=document.getElementById('mob-marches-content');
-  if(el) el.innerHTML=(sub==='bourse')
-    ?mobBuildBourse(comp.byCat.bourse||{value:0,invested:0,count:0},comp.totalBrut)
-    :mobBuildCrypto(comp.byCat.crypto||{value:0,invested:0,count:0},comp.totalBrut);
+  if(!el)return;
+  if(sub==='bourse') el.innerHTML=mobBuildBourse(comp.byCat.bourse||{value:0,invested:0,count:0},comp.totalBrut);
+  else if(sub==='crypto') el.innerHTML=mobBuildCrypto(comp.byCat.crypto||{value:0,invested:0,count:0},comp.totalBrut);
+  else if(sub==='dividendes') el.innerHTML=mobBuildDividendes();
 }
 
 // ── Switch Actifs sub (Immo / Épargne / Autres) — rebuild content ──
@@ -2028,9 +2586,11 @@ function mobShowTab(tab){
   if(tab==='marches'){
     var comp=compute();
     var el=document.getElementById('mob-marches-content');
-    if(el) el.innerHTML=(marchesSubTab==='bourse')
-      ?mobBuildBourse(comp.byCat.bourse||{value:0,invested:0,count:0},comp.totalBrut)
-      :mobBuildCrypto(comp.byCat.crypto||{value:0,invested:0,count:0},comp.totalBrut);
+    if(el){
+      if(marchesSubTab==='bourse') el.innerHTML=mobBuildBourse(comp.byCat.bourse||{value:0,invested:0,count:0},comp.totalBrut);
+      else if(marchesSubTab==='crypto') el.innerHTML=mobBuildCrypto(comp.byCat.crypto||{value:0,invested:0,count:0},comp.totalBrut);
+      else if(marchesSubTab==='dividendes') el.innerHTML=mobBuildDividendes();
+    }
   } else if(tab==='actifs'){
     var comp=compute();
     var el=document.getElementById('mob-actifs-content');
@@ -2184,6 +2744,7 @@ function renderLotsCards(assets,cat){
 // ════════════════════════════════════════════════════
 loadData();
 loadPriceCache();
+loadDivCache();
 autoSnapshot();
 renderAll();
 // Fetch live prices on load
@@ -2236,7 +2797,7 @@ window.addEventListener('resize',function(){
       <div><div class="plus-sheet-name">Importer</div><div class="plus-sheet-desc">Charger un fichier JSON</div></div>
     </div>
     <input type="file" id="importFileMob" accept=".json" style="display:none" onchange="importData(event)">
-    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.14</div>
+    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.15</div>
   </div>
 </div>
 
