@@ -562,7 +562,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
       <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb)" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
       <input type="file" id="importFileDash" accept=".json" style="display:none" onchange="importData(event)">
     </div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.16</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.17</div>
   </div>
   </div>
 
@@ -1065,7 +1065,8 @@ async function refreshAllPrices(){
   // Collect unique Yahoo tickers
   const yahooTickers=[...new Set(bourseAssets.map(a=>a.ticker?.toUpperCase()).filter(Boolean))];
 
-  // ── Clear stale errors for IDs we're about to re-fetch ──
+  // ── Clear stale errors and fresh set for this new session ──
+  freshPrices.clear();
   for(const id of cgIds)delete priceErrors[id];
   for(const t of yahooTickers)delete priceErrors[t];
 
@@ -1081,27 +1082,28 @@ async function refreshAllPrices(){
   priceLoading=false;
   savePriceCache();
 
-  // Count results only for the IDs we requested
+  // Count only IDs requested this session
   const allRequested=[...cgIds,...yahooTickers];
-  const errIds=allRequested.filter(id=>priceErrors[id]);
-  const okIds=allRequested.filter(id=>livePrices[id]!=null);
-  const errCount=errIds.length, okCount=okIds.length;
+  // freshPrices = set by fetchYahooPrice/fetchCoinGecko when fetch succeeds
+  const freshThisSession=allRequested.filter(id=>freshPrices.has(id));
+  const errThisSession=allRequested.filter(id=>priceErrors[id]);
+  const freshCount=freshThisSession.length;
+  const errCount=errThisSession.length;
 
-  if(errCount===0&&okCount>0)updatePriceStatus('ok');
-  else if(okCount>0)updatePriceStatus('partial');
+  if(errCount===0&&freshCount>0)updatePriceStatus('ok');
+  else if(freshCount>0)updatePriceStatus('partial');
   else if(allRequested.length>0)updatePriceStatus('error');
   else updatePriceStatus('idle');
 
   renderAll();
   autoSnapshot();
 
-  if(errCount>0&&okCount===0){
-    notify(`Impossible de récupérer les cours. Vérifiez votre connexion.`, false);
+  if(freshCount===0&&errCount>0){
+    notify('Impossible de récupérer les cours. Vérifiez votre connexion.', false);
   } else if(errCount>0){
-    const names=errIds.slice(0,3).join(', ');
-    notify(`${okCount} cours mis à jour. Non trouvés: ${names}${errIds.length>3?'…':''}`, false);
-  } else if(okCount>0){
-    notify(`${okCount} cours mis à jour ✓`, true);
+    notify(freshCount+' cours mis à jour · '+errCount+' non trouvés (cache utilisé)', false);
+  } else if(freshCount>0){
+    notify(freshCount+' cours mis à jour ✓', true);
   }
 }
 
@@ -1116,7 +1118,7 @@ function updatePriceStatus(state){
   let dotClass='idle',msg='',btnClass='price-refresh';
   if(state==='loading'){dotClass='loading';msg='Chargement des cours…';btnClass='price-refresh spinning';}
   else if(state==='ok'){dotClass='ok';msg='Cours en direct · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
-  else if(state==='partial'){dotClass='loading';msg='Partiel · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+  else if(state==='partial'){dotClass='loading';msg='Partiel · '+priceLastUpdated.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' (certains cours en cache)';}
   else if(state==='error'){dotClass='error';msg='Hors ligne — derniers cours en cache ↻';}
   else{msg='Cliquer ↻ pour charger les cours';}
 
@@ -1741,7 +1743,9 @@ function getConsolidated(cat){
     g.pruMoyen=g.totalQty>0?g.totalInvested/g.totalQty:0;
     g.pl=g.totalValue-g.totalInvested;
     g.plPct=g.totalInvested>0?(g.pl/g.totalInvested*100):0;
-    g.isLive=liveP!=null;
+    const key=cat==='crypto'?(g.cgId||(g.ticker?CG_MAP[g.ticker.toUpperCase()]:null)):g.ticker.toUpperCase();
+    g.isLive=liveP!=null&&isPriceFresh(key);
+    g.isCached=liveP!=null&&!isPriceFresh(key);
     g.hasError=hasPriceError(mockAsset);
     g._mockAsset=mockAsset;
     return g;
@@ -1750,6 +1754,20 @@ function getConsolidated(cat){
 
 
 const TYPE_LABELS={action:'Action',etf:'ETF',opcvm:'OPCVM',obligation:'Obligation',autre:'Autre'};
+// Color per instrument type
+const TYPE_COLORS={
+  action:{bg:'rgba(56,189,248,.1)',color:'#38bdf8'},      // bleu ciel
+  etf:{bg:'rgba(76,175,125,.12)',color:'var(--bourse)'},  // vert
+  opcvm:{bg:'rgba(168,85,247,.12)',color:'var(--autre)'}, // violet
+  obligation:{bg:'rgba(201,168,76,.12)',color:'var(--gold)'},
+  autre:{bg:'rgba(122,125,138,.12)',color:'var(--text-dim)'},
+};
+function typeBadge(type){
+  const label=TYPE_LABELS[type]||type||'—';
+  const col=TYPE_COLORS[type]||TYPE_COLORS.autre;
+  return'<span class="badge" style="background:'+col.bg+';color:'+col.color+'">'+label+'</span>';
+}
+
 function renderConsolidatedTable(cat,filteredAssets){
   // If filteredAssets provided, only show matching tickers
   const filterTickers=filteredAssets?new Set(filteredAssets.map(a=>(a.ticker||a.name).toUpperCase())):null;
@@ -1785,13 +1803,15 @@ function renderConsolidatedTable(cat,filteredAssets){
     const envs=[...g.envelopes].map(e=>isBourse?`<span class="env-pill" style="background:${ENV_COLORS[e]||'rgba(255,255,255,.05)'};color:${ENV_TEXT[e]||'var(--text-dim)'}">${ENV_LABELS[e]||e}</span>`:`<span class="badge" style="background:#f7931a18;color:var(--crypto)">${e}</span>`).join(' ');
     const coursHtml=g.isLive
       ?`<div class="price-live"><div class="price-live-dot"></div>${fmtLivePrice(g._mockAsset,g.currentPrice)}</div>`
-      :g.hasError?`<span class="price-err-badge">ERR</span>`
+      :g.isCached&&g.hasError?`<div class="price-live" title="Erreur sync — valeur en cache"><div class="price-live-dot" style="background:var(--gold)"></div><span style="color:var(--text-dim)">${fmtLivePrice(g._mockAsset,g.currentPrice)}</span></div>`
+      :g.isCached?`<div class="price-live"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">${fmtLivePrice(g._mockAsset,g.currentPrice)}</span></div>`
+      :g.hasError?`<span class="price-err-badge">⚠ sync</span>`
       :g.currentPrice>0?`<span style="color:var(--text-dim);font-family:var(--fm)">${fmtLivePrice(g._mockAsset,g.currentPrice)}</span>`:'—';
     h+=`<tr class="clickable">
       <td><div style="font-size:13px">${g.name}</div>${g.ticker?`<div style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">${g.ticker}${g.cgId&&!isBourse?` <span style="color:var(--text-muted)">· ${g.cgId}</span>`:''}${g.hasError?` <span style="color:var(--red);font-size:10px">⚠ Non trouvé</span>`:''}</div>`:''}</td>
       <td>${envs||'—'}</td>
       ${isBourse?`<td style="font-size:11px;color:var(--text-dim)">${brokerStr}</td>`:''}
-      ${isBourse?`<td><span class="badge" style="background:rgba(76,175,125,.12);color:var(--bourse)">${typeStr}</span></td>`:''}
+      ${isBourse?`<td>${[...g.types].map(t=>typeBadge(t)).join(' ')}</td>`:''}
       <td class="td-r">${fmtQ(g.totalQty)}</td>
       <td class="td-r">${g.pruMoyen>0?fmtDec(g.pruMoyen):'—'}</td>
       <td class="td-r">${coursHtml}</td>
@@ -1806,6 +1826,7 @@ function renderConsolidatedTable(cat,filteredAssets){
   const totalInv=groups.reduce((s,g)=>s+g.totalInvested,0);
   const totalPlPct=totalInv>0?(totalPl/totalInv*100):0;
   const liveCount=groups.filter(g=>g.isLive).length;
+  const cachedCount=groups.filter(g=>g.isCached).length;
   const errCount=groups.filter(g=>g.hasError).length;
   h+=`<div style="display:flex;gap:20px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:flex-end">
     <div><div class="kpi-label">Total portefeuille</div><div style="font-family:var(--fd);font-size:22px">${fmt(totalVal)}</div></div>
@@ -1814,6 +1835,7 @@ function renderConsolidatedTable(cat,filteredAssets){
     <div><div class="kpi-label">Performance</div><div class="${totalPlPct>=0?'spark-pos':'spark-neg'}" style="font-size:16px;margin-top:4px">${fmtPct(totalPlPct)}</div></div>
     <div style="margin-left:auto;text-align:right">
       ${liveCount>0?`<div style="font-size:11px;color:var(--green);font-family:var(--fm)">● ${liveCount} cours en direct</div>`:''}
+      ${cachedCount>0?`<div style="font-size:11px;color:var(--text-dim);font-family:var(--fm)">◌ ${cachedCount} en cache</div>`:''}
       ${errCount>0?`<div style="font-size:11px;color:var(--red);font-family:var(--fm)">⚠ ${errCount} non trouvé${errCount>1?'s':''}</div>`:''}
       ${cat==='crypto'?`<div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);margin-top:4px">1 € ≈ ${fxRate.toFixed(4)} $ (taux live)</div>`:''}
     </div>
@@ -1883,7 +1905,7 @@ function renderLotsTable(cat,filteredAssets){
         <td><div style="font-size:13px">${a.name}</div>${a.ticker?`<span style="font-size:11px;font-family:var(--fm);color:var(--text-dim)">${a.ticker}</span>`:''}</td>
         <td>${envHtml}</td>
         <td style="font-size:11px;color:var(--text-dim)">${a.broker||'—'}</td>
-        <td><span class="badge" style="background:rgba(76,175,125,.12);color:var(--bourse);font-size:10px">${TYPE_LABELS[a.type]||a.type||'—'}</span></td>
+        <td>${typeBadge(a.type)}</td>
         <td class="td-r">${a.quantity!=null?fmtQ(a.quantity):'—'}</td>
         <td class="td-r">${a.pru>0?fmtDec(a.pru):'—'}</td>
         <td class="td-r">${priceCell(a)}</td>
@@ -2290,6 +2312,7 @@ function renderPe(){
           +'<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'
             +'<span style="font-size:10px;font-family:var(--fm);padding:2px 8px;border-radius:4px;background:'+(STATUS_COLOR[d.status]||'var(--text-dim)')+'22;color:'+(STATUS_COLOR[d.status]||'var(--text-dim)')+'">'+( STATUS_LABEL[d.status]||d.status||'—')+'</span>'
             +(d.targetEndDate?'<span style="font-size:10px;font-family:var(--fm);color:var(--text-dim)">Échéance : '+new Date(d.targetEndDate).toLocaleDateString('fr-FR',{month:'short',year:'numeric'})+' ('+remStr+')</span>':'')
+            +(d.target?'<span style="font-size:10px;font-family:var(--fm);padding:2px 8px;border-radius:4px;background:rgba(129,140,248,.15);color:var(--pe)">Obj. '+d.target+'</span>':'')
           +'</div>'
         +'</div>'
         +'<div style="text-align:right;flex-shrink:0">'
@@ -2484,7 +2507,11 @@ function mobBuildPe(){
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
         +'<div><div style="font-size:14px;font-weight:500">'+d.name+'</div>'
           +(d.fund?'<div style="font-size:11px;color:var(--text-dim);font-family:var(--fm)">'+d.fund+'</div>':'')
-          +'<div style="margin-top:4px"><span style="font-size:10px;font-family:var(--fm);padding:2px 7px;border-radius:4px;background:'+(STATUS_COLOR[d.status]||'var(--text-dim)')+'22;color:'+(STATUS_COLOR[d.status]||'var(--text-dim)')+'">'+( STATUS_LABEL[d.status]||'—')+'</span>'+(remMonths!=null?' <span style="font-size:10px;color:var(--text-dim);font-family:var(--fm)">'+remStr+'</span>':'')+'</div>'
+          +'<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">'
+        +'<span style="font-size:10px;font-family:var(--fm);padding:2px 7px;border-radius:4px;background:'+(STATUS_COLOR[d.status]||'var(--text-dim)')+'22;color:'+(STATUS_COLOR[d.status]||'var(--text-dim)')+'">'+( STATUS_LABEL[d.status]||'—')+'</span>'
+        +(remMonths!=null?'<span style="font-size:10px;color:var(--text-dim);font-family:var(--fm)">'+remStr+'</span>':'')
+        +(d.target?'<span style="font-size:10px;font-family:var(--fm);padding:2px 7px;border-radius:4px;background:rgba(129,140,248,.15);color:var(--pe)">Obj. '+d.target+'</span>':'')
+        +'</div>'
         +'</div>'
         +'<div style="text-align:right"><div style="font-family:var(--fd);font-size:20px">'+fmt(d.nav||0)+'</div>'
           +'<div style="font-size:11px;font-family:var(--fm);color:'+(pl>=0?'var(--green)':'var(--red)')+'">'+( pl>=0?'+':'')+fmt(pl)+'</div></div>'
@@ -3026,7 +3053,8 @@ function renderConsolidatedCards(groups,cat){
     const plCl=g.pl>=0?'var(--green)':'var(--red)';
     const coursHtml=g.isLive
       ?`<div class="price-live" style="justify-content:flex-end"><div class="price-live-dot"></div>${fmtLivePrice(g._mockAsset,g.currentPrice)}</div>`
-      :g.hasError?`<span class="price-err-badge">ERR</span>`
+      :g.isCached?`<div class="price-live" style="justify-content:flex-end"><div class="price-live-dot stale"></div><span style="color:var(--text-dim)">${fmtLivePrice(g._mockAsset,g.currentPrice)}</span></div>`
+      :g.hasError?`<span class="price-err-badge">⚠</span>`
       :g.currentPrice>0?`<span style="color:var(--text-dim);font-family:var(--fm)">${fmtLivePrice(g._mockAsset,g.currentPrice)}</span>`:'—';
     const envs=[...g.envelopes].map(e=>isBourse
       ?`<span class="env-pill" style="background:${ENV_COLORS[e]||'rgba(255,255,255,.05)'};color:${ENV_TEXT[e]||'var(--text-dim)'}">${ENV_LABELS[e]||e}</span>`
@@ -3108,7 +3136,7 @@ function renderLotsCards(assets,cat){
             <div style="font-size:11px;font-family:var(--fm);color:var(--text-dim);margin-top:2px">${a.ticker||''}${a.broker?' · '+a.broker:''}</div>
             <div style="display:flex;gap:5px;margin-top:5px">
               ${envLabel?`<span class="env-pill" style="background:${ENV_COLORS[a.enveloppe]||'rgba(255,255,255,.05)'};color:${ENV_TEXT[a.enveloppe]||'var(--text-dim)'}">${envLabel}</span>`:''}
-              ${a.type?`<span class="badge" style="background:rgba(76,175,125,.12);color:var(--bourse)">${TYPE_LABELS[a.type]||a.type}</span>`:''}
+              ${a.type?typeBadge(a.type):''}
             </div>
           </div>
           <div style="text-align:right">
@@ -3192,7 +3220,7 @@ window.addEventListener('resize',function(){
       <div><div class="plus-sheet-name">Importer</div><div class="plus-sheet-desc">Charger un fichier JSON</div></div>
     </div>
     <input type="file" id="importFileMob" accept=".json" style="display:none" onchange="importData(event)">
-    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.16</div>
+    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.17</div>
   </div>
 </div>
 
