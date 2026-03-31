@@ -14,7 +14,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252a38;--gold:#c9a84c;--gold-light:#e8c97a;--gold-dim:rgba(201,168,76,.15);--red:#e05555;--green:#4caf7d;--text:#e8e6df;--text-dim:#7a7d8a;--text-muted:#3d4155;--immo:#6e8efb;--bourse:#4caf7d;--crypto:#f7931a;--epargne:#c9a84c;--dette:#e05555;--autre:#a855f7;--sp500:#38bdf8;--fd:'Cormorant Garamond',serif;--fm:'DM Mono',monospace;--fb:'DM Sans',sans-serif}
+:root{--bg:#0d0f14;--surface:#13161e;--surface2:#1a1e28;--border:#252a38;--gold:#c9a84c;--gold-light:#e8c97a;--gold-dim:rgba(201,168,76,.15);--red:#e05555;--green:#4caf7d;--text:#e8e6df;--text-dim:#7a7d8a;--text-muted:#3d4155;--immo:#6e8efb;--bourse:#4caf7d;--crypto:#f7931a;--epargne:#c9a84c;--dette:#e05555;--autre:#a855f7;--pe:#818cf8;--sp500:#38bdf8;--fd:'Cormorant Garamond',serif;--fm:'DM Mono',monospace;--fb:'DM Sans',sans-serif}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px;min-height:100vh;overflow-x:hidden}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -234,7 +234,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
   /* ── Layout ── */
   .app{flex-direction:column}
   .sidebar{display:none}
-  .main{margin-left:0;padding:14px 14px calc(70px + env(safe-area-inset-bottom,0px));max-width:100vw}
+  .main{margin-left:0;padding:14px 14px calc(80px + env(safe-area-inset-bottom,0px));max-width:100vw}
 
   /* ── Bottom nav 5 tabs — zero horizontal scroll ── */
   .mob-bottom-nav{
@@ -247,7 +247,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
   .mob-tab{
     flex:1;display:flex;flex-direction:column;
     align-items:center;justify-content:center;
-    gap:3px;padding:8px 2px 6px;cursor:pointer;
+    gap:3px;padding:10px 2px 8px;cursor:pointer;
     color:var(--text-dim);border-top:2px solid transparent;
     transition:color .15s;-webkit-tap-highlight-color:transparent;
     user-select:none;
@@ -406,7 +406,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
 
   /* ── FAB (floating add button on mobile) ── */
   .mob-fab{
-    position:fixed; bottom:calc(72px + env(safe-area-inset-bottom,0px)); right:18px;
+    position:fixed; bottom:calc(84px + env(safe-area-inset-bottom,0px)); right:18px;
     width:50px; height:50px; border-radius:50%;
     background:var(--gold); color:#0d0f14;
     font-size:22px; font-weight:300; line-height:1;
@@ -467,10 +467,11 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
     <div class="nav-section">Vue d'ensemble</div>
     <div class="nav-item active" data-sec="dashboard" onclick="showSection('dashboard',this)"><span class="ni">◈</span><span class="mob-label">Accueil</span></div>
     <div class="nav-section">Actifs</div>
-    <div class="nav-item" data-sec="immo" onclick="showSection('immo',this)"><span class="ni">🏠</span><span class="mob-label">Immo</span><span class="nav-dot" style="background:var(--immo)"></span></div>
     <div class="nav-item" data-sec="bourse" onclick="showSection('bourse',this)"><span class="ni">📈</span><span class="mob-label">Bourse</span><span class="nav-dot" style="background:var(--bourse)"></span></div>
     <div class="nav-item" data-sec="crypto" onclick="showSection('crypto',this)"><span class="ni">₿</span><span class="mob-label">Crypto</span><span class="nav-dot" style="background:var(--crypto)"></span></div>
+    <div class="nav-item" data-sec="pe" onclick="showSection('pe',this)"><span class="ni">💼</span><span class="mob-label">Private Equity</span><span class="nav-dot" style="background:var(--pe)"></span></div>
     <div class="nav-item" data-sec="epargne" onclick="showSection('epargne',this)"><span class="ni">🏦</span><span class="mob-label">Épargne</span><span class="nav-dot" style="background:var(--epargne)"></span></div>
+    <div class="nav-item" data-sec="immo" onclick="showSection('immo',this)"><span class="ni">🏠</span><span class="mob-label">Immo</span><span class="nav-dot" style="background:var(--immo)"></span></div>
     <div class="nav-item" data-sec="autre" onclick="showSection('autre',this)"><span class="ni">✦</span><span class="mob-label">Autres</span><span class="nav-dot" style="background:var(--autre)"></span></div>
     <div class="nav-section">Passif</div>
     <div class="nav-item" data-sec="dettes" onclick="showSection('dettes',this)"><span class="ni">⚠</span><span class="mob-label">Dettes</span><span class="nav-dot" style="background:var(--dette)"></span></div>
@@ -506,6 +507,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
       <div class="kpi-card"><div class="kpi-accent" style="background:var(--bourse)"></div><div class="kpi-label">Bourse</div><div class="kpi-value" id="kpi-bourse" style="font-size:22px">0 €</div><div class="kpi-delta" id="kpi-bourse-d" style="display:none"></div></div>
       <div class="kpi-card"><div class="kpi-accent" style="background:var(--crypto)"></div><div class="kpi-label">Crypto</div><div class="kpi-value" id="kpi-crypto" style="font-size:22px">0 €</div><div class="kpi-delta" id="kpi-crypto-d" style="display:none"></div></div>
       <div class="kpi-card"><div class="kpi-accent" style="background:var(--epargne)"></div><div class="kpi-label">Épargne</div><div class="kpi-value" id="kpi-epargne" style="font-size:22px">0 €</div><div class="kpi-delta" id="kpi-epargne-d" style="display:none"></div></div>
+      <div class="kpi-card"><div class="kpi-accent" style="background:var(--pe)"></div><div class="kpi-label">Private Equity</div><div class="kpi-value" id="kpi-pe" style="font-size:22px">0 €</div><div class="kpi-delta" id="kpi-pe-d" style="display:none"></div></div>
     </div>
     <div class="grid-2" style="margin-bottom:16px">
       <div class="panel" style="margin-bottom:0">
@@ -560,7 +562,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
       <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb)" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
       <input type="file" id="importFileDash" accept=".json" style="display:none" onchange="importData(event)">
     </div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.15</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.16</div>
   </div>
   </div>
 
@@ -678,6 +680,25 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
     </div>
   </div>
 
+
+  <!-- PRIVATE EQUITY -->
+  <div id="section-pe" class="section">
+    <div class="cat-header">
+      <div class="cat-icon-big" style="background:rgba(129,140,248,.15)">💼</div>
+      <div><div class="cat-title-big" style="color:var(--pe)">Private Equity</div><div class="topbar-date">Fonds privés & co-investissements</div></div>
+      <button class="btn btn-gold ml-auto mob-hide-on-mobile" onclick="openAddPeDeal()">+ Ajouter deal</button>
+    </div>
+    <!-- KPIs portefeuille -->
+    <div class="kpi-row kpi-5" id="pe-kpi" style="margin-bottom:20px"></div>
+    <!-- Deals list -->
+    <div class="panel" style="margin-bottom:0" id="pe-deals-panel">
+      <div class="panel-header">
+        <span class="panel-title">Deals</span>
+        <button class="btn btn-outline btn-sm mob-hide-on-mobile" onclick="openAddPeDeal()">+ Ajouter</button>
+      </div>
+      <div class="panel-body" id="pe-deals-list"></div>
+    </div>
+  </div>
   <div id="section-epargne" class="section"></div>
   <div id="section-autre" class="section"></div>
 
@@ -712,11 +733,16 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
   <div id="mob-marches-content"></div>
 </div>
 
+<!-- ─── MOBILE COMPOSITE: Private Equity ─────────────────── -->
+<div id="section-pe-mob" class="section" style="display:none">
+  <div id="mob-pe-content"></div>
+</div>
+
 <!-- ─── MOBILE COMPOSITE: Actifs ─────────────────────── -->
 <div id="section-actifs" class="section" style="display:none">
   <div class="seg-control" id="actifs-seg" style="margin-bottom:12px">
-    <button class="seg-btn active" id="seg-immo" onclick="mobSwitchActifs('immo',this)">🏠 Immo</button>
-    <button class="seg-btn" id="seg-epargne" onclick="mobSwitchActifs('epargne',this)">🏦 Épargne</button>
+    <button class="seg-btn active" id="seg-epargne" onclick="mobSwitchActifs('epargne',this)">🏦 Épargne</button>
+    <button class="seg-btn" id="seg-immo" onclick="mobSwitchActifs('immo',this)">🏠 Immo</button>
     <button class="seg-btn" id="seg-autre" onclick="mobSwitchActifs('autre',this)">✦ Autres</button>
   </div>
   <div id="mob-actifs-content"></div>
@@ -750,7 +776,6 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
 </div>
 
 <div class="notif" id="notif"></div>
-<button class="mob-fab" id="mob-fab" onclick="mobFabClick()" title="Ajouter">+</button>
 <button class="mob-fab" id="mob-fab" onclick="mobFabClick()" title="Ajouter">+</button>
 
 <script>
@@ -845,11 +870,11 @@ function eurToUsd(eur){return eur*fxRate;}
 // DATA STORE
 // ════════════════════════════════════════════════════
 const STORE='patrimoine_v5';
-let data={assets:[],dettes:[],history:[],snapshots:[],dividendsReceived:[]};
-function loadData(){const r=localStorage.getItem(STORE);if(r)try{data={...data,...JSON.parse(r)};}catch(e){}if(!data.snapshots)data.snapshots=[];if(!data.dividendsReceived)data.dividendsReceived=[];}
+let data={assets:[],dettes:[],history:[],snapshots:[],dividendsReceived:[],peDeals:[]};
+function loadData(){const r=localStorage.getItem(STORE);if(r)try{data={...data,...JSON.parse(r)};}catch(e){}if(!data.snapshots)data.snapshots=[];if(!data.dividendsReceived)data.dividendsReceived=[];if(!data.peDeals)data.peDeals=[];}
 function save(){localStorage.setItem(STORE,JSON.stringify(data));}
 
-const CATS={immo:{label:'Immobilier',icon:'🏠',color:'#6e8efb'},bourse:{label:'Bourse',icon:'📈',color:'#4caf7d'},crypto:{label:'Crypto',icon:'₿',color:'#f7931a'},epargne:{label:'Épargne',icon:'🏦',color:'#c9a84c'},autre:{label:'Autre',icon:'✦',color:'#a855f7'}};
+const CATS={bourse:{label:'Bourse',icon:'📈',color:'#4caf7d'},crypto:{label:'Crypto',icon:'₿',color:'#f7931a'},pe:{label:'Private Equity',icon:'💼',color:'#818cf8'},epargne:{label:'Épargne',icon:'🏦',color:'#c9a84c'},immo:{label:'Immobilier',icon:'🏠',color:'#6e8efb'},autre:{label:'Autre',icon:'✦',color:'#a855f7'}};
 const ENV_LABELS={pea:'PEA',cto:'CTO',av:'Assur.-vie',per:'PER'};
 const ENV_COLORS={pea:'rgba(110,142,251,.15)',cto:'rgba(76,175,125,.15)',av:'rgba(201,168,76,.15)',per:'rgba(168,85,247,.15)'};
 const ENV_TEXT={pea:'#6e8efb',cto:'#4caf7d',av:'#c9a84c',per:'#a855f7'};
@@ -1897,11 +1922,20 @@ function renderAll(){
   if(!leg.innerHTML)leg.innerHTML='<div class="empty" style="padding:14px"><div class="empty-text">Aucun actif</div></div>';
   renderEvoChart();renderPerfChart();
   // All assets
-    renderImmo(byCat.immo||{value:0,invested:0,count:0},totalBrut);
+    // PE KPI dashboard card
+  const peTotalNav=data.peDeals.reduce(function(s,d){return s+(d.nav||0);},0);
+  const peTotalCalled=data.peDeals.reduce(function(s,d){return s+(d.calledCapital||0);},0);
+  const peKpiEl=document.getElementById('kpi-pe');
+  if(peKpiEl)peKpiEl.textContent=fmt(peTotalNav);
+  const peKpiD=document.getElementById('kpi-pe-d');
+  if(peKpiD&&peTotalCalled>0){const m=(peTotalNav/peTotalCalled);peKpiD.className='kpi-delta '+(m>=1?'pos':'neg');peKpiD.textContent=m.toFixed(2)+'x';peKpiD.style.display='inline-flex';}
+  else if(peKpiD)peKpiD.style.display='none';
+  renderImmo(byCat.immo||{value:0,invested:0,count:0},totalBrut);
   renderBourse(byCat.bourse||{value:0,invested:0,count:0},totalBrut);
   renderCrypto(byCat.crypto||{value:0,invested:0,count:0},totalBrut);
   renderEpargne(byCat.epargne||{value:0,invested:0,count:0},totalBrut);
   renderAutre(byCat.autre||{value:0,invested:0,count:0},totalBrut);
+  renderPe();
   renderDettes(totalDettes);renderHistory();
 }
 
@@ -2118,6 +2152,355 @@ function mobBuildDividendes(){
         plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1e28',borderColor:'#252a38',borderWidth:1,titleColor:'#e8e6df',bodyColor:'#7a7d8a',padding:8,callbacks:{label:function(ctx){return' '+ctx.dataset.label+' : '+fmt(ctx.raw);}}}},
         scales:{x:{grid:{color:'rgba(37,42,56,.6)'},ticks:{color:'#3d4155',font:{family:'DM Mono',size:9},maxRotation:0,maxTicksLimit:6}},y:{grid:{color:'rgba(37,42,56,.6)'},ticks:{color:'#3d4155',font:{family:'DM Mono',size:9},callback:function(v){return fmt(v);}}}}}
     });
+  });
+  return html;
+}
+
+
+// ════════════════════════════════════════════════════
+// PRIVATE EQUITY ENGINE
+// ════════════════════════════════════════════════════
+
+// ── IRR via Newton-Raphson (cashflows: [{date, amount}]) ──
+function calcIRR(cashflows){
+  if(!cashflows||cashflows.length<2)return null;
+  // Normalise dates to years from first CF
+  const t0=cashflows[0].date;
+  const cfs=cashflows.map(function(cf){
+    return{t:(cf.date-t0)/(365.25*24*3600*1000),v:cf.amount};
+  });
+  function npv(r){
+    return cfs.reduce(function(s,cf){return s+cf.v/Math.pow(1+r,cf.t);},0);
+  }
+  function dnpv(r){
+    return cfs.reduce(function(s,cf){return s-cf.t*cf.v/Math.pow(1+r,cf.t+1);},0);
+  }
+  var r=0.1;
+  for(var i=0;i<200;i++){
+    var n=npv(r),d=dnpv(r);
+    if(Math.abs(d)<1e-12)break;
+    var r2=r-n/d;
+    if(r2<-0.999)r2=-0.999;
+    if(Math.abs(r2-r)<1e-8){r=r2;break;}
+    r=r2;
+  }
+  return isFinite(r)?r:null;
+}
+
+// ── Build IRR cash flows for a deal ──
+function dealIRRFlows(deal){
+  const flows=[];
+  // Capital calls (outflows) — negative
+  const called=deal.calledCapital||0;
+  if(called>0&&deal.date){
+    flows.push({date:new Date(deal.date).getTime(),amount:-called});
+  }
+  // Cash flow journal entries
+  (deal.cashflows||[]).forEach(function(cf){
+    flows.push({date:new Date(cf.date).getTime(),amount:cf.amount});
+  });
+  // Terminal value: current NAV (at today)
+  const nav=deal.nav||0;
+  if(nav>0) flows.push({date:Date.now(),amount:nav});
+  return flows.sort(function(a,b){return a.date-b.date;});
+}
+
+// ── TVPI and DPI ──
+function dealTVPI(deal){
+  const called=deal.calledCapital||0;
+  if(!called)return null;
+  const distrib=dealTotalDistributions(deal);
+  return(distrib+(deal.nav||0))/called;
+}
+function dealDPI(deal){
+  const called=deal.calledCapital||0;
+  if(!called)return null;
+  return dealTotalDistributions(deal)/called;
+}
+function dealTotalDistributions(deal){
+  return (deal.cashflows||[]).reduce(function(s,cf){return s+cf.amount;},0);
+}
+function dealRemainingMonths(deal){
+  if(!deal.targetEndDate)return null;
+  const diff=new Date(deal.targetEndDate)-new Date();
+  return Math.max(0,Math.round(diff/(30.44*24*3600*1000)));
+}
+
+// ── Portfolio-level aggregates ──
+function peTotals(){
+  var totalCalled=0,totalNAV=0,totalDistrib=0;
+  var irrFlows=[];
+  data.peDeals.forEach(function(d){
+    totalCalled+=(d.calledCapital||0);
+    totalNAV+=(d.nav||0);
+    totalDistrib+=dealTotalDistributions(d);
+    dealIRRFlows(d).forEach(function(f){irrFlows.push(f);});
+  });
+  irrFlows.sort(function(a,b){return a.date-b.date;});
+  var tvpi=totalCalled>0?(totalNAV+totalDistrib)/totalCalled:null;
+  var dpi=totalCalled>0?totalDistrib/totalCalled:null;
+  // Portfolio IRR: aggregate all deal flows then run IRR
+  var irr=irrFlows.length>=2?calcIRR(irrFlows):null;
+  return{totalCalled,totalNAV,totalDistrib,tvpi,dpi,irr};
+}
+
+// ── RENDER PE SECTION ──
+function renderPe(){
+  const el=document.getElementById('section-pe');
+  if(!el)return;
+  const deals=data.peDeals;
+  const tot=peTotals();
+  const irrStr=tot.irr!=null?(tot.irr*100).toFixed(1)+'%':'—';
+  const tvpiStr=tot.tvpi!=null?tot.tvpi.toFixed(2)+'x':'—';
+  const dpiStr=tot.dpi!=null?tot.dpi.toFixed(2)+'x':'—';
+
+  // KPIs
+  const kpiEl=document.getElementById('pe-kpi');
+  if(kpiEl) kpiEl.innerHTML=
+    '<div class="kpi-card primary"><div class="kpi-label">NAV totale (VANT)</div><div class="kpi-value">'+fmt(tot.totalNAV)+'</div><div class="kpi-sub">'+deals.length+' deal'+(deals.length>1?'s':'')+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Capital appelé</div><div class="kpi-value" style="font-size:24px;color:var(--text-dim)">'+fmt(tot.totalCalled)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">TVPI</div><div class="kpi-value" style="font-size:24px;color:var(--gold)">'+tvpiStr+'</div><div class="kpi-sub">DPI '+dpiStr+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">TRI (IRR)</div><div class="kpi-value" style="font-size:24px;color:'+(tot.irr!=null&&tot.irr>0?'var(--green)':tot.irr!=null&&tot.irr<0?'var(--red)':'var(--text-dim)')+'">'+irrStr+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Distributions reçues</div><div class="kpi-value" style="font-size:24px;color:var(--green)">'+fmt(tot.totalDistrib)+'</div></div>';
+
+  // Deals list
+  const listEl=document.getElementById('pe-deals-list');
+  if(!listEl)return;
+  if(!deals.length){
+    listEl.innerHTML='<div class="empty"><div class="empty-icon">💼</div><div class="empty-text">Aucun deal. Cliquez sur "+ Ajouter deal" pour commencer.</div></div>';
+    return;
+  }
+  const STATUS_LABEL={active:'En cours',exited:'Sorti',default:'En défaut'};
+  const STATUS_COLOR={active:'var(--green)',exited:'var(--text-dim)',default:'var(--red)'};
+  listEl.innerHTML=deals.map(function(d){
+    const irr=calcIRR(dealIRRFlows(d));
+    const tvpi=dealTVPI(d);
+    const dpi=dealDPI(d);
+    const distrib=dealTotalDistributions(d);
+    const remMonths=dealRemainingMonths(d);
+    const remStr=remMonths!=null?(remMonths>24?Math.round(remMonths/12)+'a '+( remMonths%12)+'m':remMonths+'m'):'—';
+    const pl=(d.nav||0)+distrib-(d.calledCapital||0);
+    const plCl=pl>=0?'var(--green)':'var(--red)';
+    return'<div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:12px">'
+      // Header row
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px">'
+        +'<div>'
+          +'<div style="font-size:15px;font-weight:500">'+d.name+'</div>'
+          +(d.fund?'<div style="font-size:11px;color:var(--text-dim);font-family:var(--fm);margin-top:2px">'+d.fund+'</div>':'')
+          +'<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">'
+            +'<span style="font-size:10px;font-family:var(--fm);padding:2px 8px;border-radius:4px;background:'+(STATUS_COLOR[d.status]||'var(--text-dim)')+'22;color:'+(STATUS_COLOR[d.status]||'var(--text-dim)')+'">'+( STATUS_LABEL[d.status]||d.status||'—')+'</span>'
+            +(d.targetEndDate?'<span style="font-size:10px;font-family:var(--fm);color:var(--text-dim)">Échéance : '+new Date(d.targetEndDate).toLocaleDateString('fr-FR',{month:'short',year:'numeric'})+' ('+remStr+')</span>':'')
+          +'</div>'
+        +'</div>'
+        +'<div style="text-align:right;flex-shrink:0">'
+          +'<div style="font-family:var(--fd);font-size:22px">'+fmt(d.nav||0)+'</div>'
+          +'<div style="font-size:12px;font-family:var(--fm);color:'+plCl+'">'+(pl>=0?'+':'')+fmt(pl)+'</div>'
+        +'</div>'
+      +'</div>'
+      // Metrics grid
+      +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:12px">'
+        +['Capital appelé','Non déployé','TVPI','DPI','TRI'].map(function(label,i){
+          const vals=[fmt(d.calledCapital||0),fmt(d.undeployedCapital||0),(tvpi!=null?tvpi.toFixed(2)+'x':'—'),(dpi!=null?dpi.toFixed(2)+'x':'—'),(irr!=null?(irr*100).toFixed(1)+'%':'—')];
+          const colors=['','','var(--gold)','var(--text)','var(--green)'];
+          return'<div style="text-align:center"><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);font-family:var(--fm);margin-bottom:4px">'+label+'</div>'
+            +'<div style="font-family:var(--fm);font-size:13px;color:'+(colors[i]||'var(--text)')+'">'+vals[i]+'</div></div>';
+        }).join('')
+      +'</div>'
+      // Cash flows journal header + add button
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+        +'<div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);font-family:var(--fm)">Flux de trésorerie ('+( d.cashflows||[]).length+')</div>'
+        +'<div style="display:flex;gap:6px">'
+          +'<button class="btn btn-outline btn-xs" onclick="openAddPeFlow(\''+d.id+'\')">+ Flux</button>'
+          +'<button class="btn btn-outline btn-xs" onclick="openEditPeDeal(\''+d.id+'\')">✎ Modifier</button>'
+          +'<button class="action-btn del btn-xs" onclick="deletePeDeal(\''+d.id+'\')" style="font-size:11px;padding:4px 8px">✕</button>'
+        +'</div>'
+      +'</div>'
+      // Cash flows list
+      +(!(d.cashflows||[]).length
+        ?'<div style="font-size:11px;color:var(--text-muted);font-family:var(--fm);padding:6px 0">Aucun flux enregistré.</div>'
+        :'<div style="display:flex;flex-direction:column;gap:4px">'
+          +(d.cashflows||[]).slice().sort(function(a,b){return new Date(b.date)-new Date(a.date);}).map(function(cf){
+            const TYPE_LABEL={distribution:'Distribution',capital_return:'Remb. capital',capital_gain:'Plus-value de cession'};
+            const TYPE_COLOR={distribution:'var(--green)',capital_return:'var(--gold)',capital_gain:'var(--green)'};
+            return'<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--surface);border-radius:6px;font-size:12px">'
+              +'<div style="display:flex;align-items:center;gap:8px">'
+                +'<span style="font-family:var(--fm);color:var(--text-dim);font-size:11px">'+new Date(cf.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})+'</span>'
+                +'<span style="padding:2px 6px;border-radius:4px;font-size:10px;font-family:var(--fm);background:'+(TYPE_COLOR[cf.type]||'var(--text-dim)')+'22;color:'+(TYPE_COLOR[cf.type]||'var(--text-dim)')+'">'+( TYPE_LABEL[cf.type]||cf.type)+'</span>'
+              +'</div>'
+              +'<div style="display:flex;align-items:center;gap:8px">'
+                +'<span style="font-family:var(--fm);color:var(--green)">+'+fmt(cf.amount)+'</span>'
+                +'<button class="action-btn del" style="font-size:11px;padding:2px 4px" onclick="deletePeFlow(\''+d.id+'\',\''+cf.id+'\')">✕</button>'
+              +'</div>'
+            +'</div>';
+          }).join('')
+        +'</div>')
+    +'</div>';
+  }).join('');
+}
+
+// ── ADD / EDIT DEAL modal ──
+let editingPeDealId=null;
+function openAddPeDeal(){
+  editingPeDealId=null;
+  _showPeDealModal({});
+}
+function openEditPeDeal(id){
+  editingPeDealId=id;
+  const d=data.peDeals.find(function(x){return x.id===id;});
+  if(d)_showPeDealModal(d);
+}
+function _showPeDealModal(d){
+  document.getElementById('modal-dette-title').textContent=editingPeDealId?'Modifier le deal':'Nouveau deal PE';
+  document.querySelector('#modal-dette .modal-body').innerHTML=
+    '<div class="fg"><label>Nom du deal</label><input type="text" id="pe-name" placeholder="Fonds Infrastructure III…" value="'+( d.name||'')+'"></div>'
+    +'<div class="fg"><label>Nom du fonds / plateforme</label><input type="text" id="pe-fund" placeholder="Fundora, Eurazeo…" value="'+( d.fund||'')+'"></div>'
+    +'<div class="fr2">'
+      +'<div class="fg"><label>Date investissement</label><input type="date" id="pe-date" value="'+( d.date||new Date().toISOString().split("T")[0])+'"></div>'
+      +'<div class="fg"><label>Date cible de sortie</label><input type="date" id="pe-enddate" value="'+( d.targetEndDate||'')+'"></div>'
+    +'</div>'
+    +'<div class="fr2">'
+      +'<div class="fg"><label>Capital appelé (€)</label><input type="number" id="pe-called" placeholder="10000" step="0.01" value="'+( d.calledCapital||'')+'"></div>'
+      +'<div class="fg"><label>Capital non déployé (€)</label><input type="number" id="pe-uncalled" placeholder="5000" step="0.01" value="'+( d.undeployedCapital||'')+'"></div>'
+    +'</div>'
+    +'<div class="fr2">'
+      +'<div class="fg"><label>NAV actuelle / VANT (€)</label><input type="number" id="pe-nav" placeholder="12000" step="0.01" value="'+( d.nav||'')+'"></div>'
+      +'<div class="fg"><label>Statut</label><select id="pe-status"><option value="active"'+(d.status==="active"?" selected":"")+'>En cours</option><option value="exited"'+(d.status==="exited"?" selected":"")+'>Sorti</option><option value="default"'+(d.status==="default"?" selected":"")+'>En défaut</option></select></div>'
+    +'</div>'
+    +'<div class="fg"><label>Objectif (ex : x2, x5.5, 15%…)</label><input type="text" id="pe-target" placeholder="x3" value="'+( d.target||'')+'"></div>'
+    +'<div class="fg"><label>Notes</label><input type="text" id="pe-notes" placeholder="…" value="'+( d.notes||'')+'"></div>';
+  document.querySelector('#modal-dette .modal-footer').innerHTML=
+    '<button class="btn btn-outline" onclick="closeModal(\'dette\')">Annuler</button>'
+    +'<button class="btn btn-gold" onclick="savePeDeal()">Enregistrer</button>';
+  document.getElementById('modal-dette').classList.add('open');
+}
+function savePeDeal(){
+  const name=document.getElementById('pe-name').value.trim();
+  if(!name){notify('Veuillez saisir un nom',false);return;}
+  const deal={
+    id:editingPeDealId||Date.now().toString(),
+    name,
+    fund:document.getElementById('pe-fund').value.trim(),
+    date:document.getElementById('pe-date').value,
+    targetEndDate:document.getElementById('pe-enddate').value||null,
+    calledCapital:parseFloat(document.getElementById('pe-called').value)||0,
+    undeployedCapital:parseFloat(document.getElementById('pe-uncalled').value)||0,
+    nav:parseFloat(document.getElementById('pe-nav').value)||0,
+    status:document.getElementById('pe-status').value,
+    target:document.getElementById('pe-target').value.trim(),
+    notes:document.getElementById('pe-notes').value.trim(),
+    cashflows: editingPeDealId?(data.peDeals.find(function(x){return x.id===editingPeDealId;})||{}).cashflows||[]:[]
+  };
+  if(editingPeDealId){
+    var idx=data.peDeals.findIndex(function(x){return x.id===editingPeDealId;});
+    data.peDeals[idx]=deal;
+  } else {
+    data.peDeals.push(deal);
+  }
+  save();closeModal('dette');renderPe();renderAll();
+  notify('Deal enregistré ✓',true);
+}
+function deletePeDeal(id){
+  if(!confirm('Supprimer ce deal et tous ses flux ?'))return;
+  data.peDeals=data.peDeals.filter(function(x){return x.id!==id;});
+  save();renderPe();renderAll();
+}
+
+// ── ADD CASH FLOW modal ──
+let editingPeFlowDealId=null;
+function openAddPeFlow(dealId){
+  editingPeFlowDealId=dealId;
+  document.getElementById('modal-dette-title').textContent='Ajouter un flux';
+  document.querySelector('#modal-dette .modal-body').innerHTML=
+    '<div class="fr2">'
+      +'<div class="fg"><label>Date</label><input type="date" id="pef-date" value="'+new Date().toISOString().split("T")[0]+'"></div>'
+      +'<div class="fg"><label>Type</label><select id="pef-type"><option value="distribution">Distribution</option><option value="capital_return">Remb. capital</option><option value="capital_gain">Plus-value de cession</option></select></div>'
+    +'</div>'
+    +'<div class="fg"><label>Montant reçu (€)</label><input type="number" id="pef-amount" placeholder="500" step="0.01"></div>'
+    +'<div class="fg"><label>Notes</label><input type="text" id="pef-notes" placeholder="…"></div>';
+  document.querySelector('#modal-dette .modal-footer').innerHTML=
+    '<button class="btn btn-outline" onclick="closeModal(\'dette\')">Annuler</button>'
+    +'<button class="btn btn-gold" onclick="savePeFlow()">Enregistrer</button>';
+  document.getElementById('modal-dette').classList.add('open');
+}
+function savePeFlow(){
+  const amount=parseFloat(document.getElementById('pef-amount').value);
+  if(!amount||amount<=0){notify('Veuillez saisir un montant',false);return;}
+  const flow={
+    id:Date.now().toString(),
+    date:document.getElementById('pef-date').value,
+    type:document.getElementById('pef-type').value,
+    amount,
+    notes:document.getElementById('pef-notes').value.trim()
+  };
+  var deal=data.peDeals.find(function(x){return x.id===editingPeFlowDealId;});
+  if(!deal)return;
+  if(!deal.cashflows)deal.cashflows=[];
+  deal.cashflows.push(flow);
+  save();closeModal('dette');renderPe();
+  notify('Flux enregistré ✓',true);
+}
+function deletePeFlow(dealId,flowId){
+  var deal=data.peDeals.find(function(x){return x.id===dealId;});
+  if(!deal)return;
+  deal.cashflows=(deal.cashflows||[]).filter(function(f){return f.id!==flowId;});
+  save();renderPe();
+}
+
+// ── Mobile PE builder ──
+function mobBuildPe(){
+  var tot=peTotals();
+  var irrStr=tot.irr!=null?(tot.irr*100).toFixed(1)+'%':'—';
+  var tvpiStr=tot.tvpi!=null?tot.tvpi.toFixed(2)+'x':'—';
+  var html='';
+
+  // Top button
+  html+='<div style="display:flex;justify-content:flex-end;margin-bottom:12px">'
+    +'<button class="btn btn-gold btn-sm" onclick="openAddPeDeal()">+ Ajouter deal</button>'
+  +'</div>';
+
+  // KPIs
+  html+='<div class="kpi-row kpi-4" style="margin-bottom:14px">'
+    +'<div class="kpi-card primary"><div class="kpi-label">NAV totale</div><div class="kpi-value">'+fmt(tot.totalNAV)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Capital appelé</div><div class="kpi-value" style="font-size:22px;color:var(--text-dim)">'+fmt(tot.totalCalled)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">TVPI</div><div class="kpi-value" style="font-size:22px;color:var(--gold)">'+tvpiStr+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">TRI</div><div class="kpi-value" style="font-size:22px;color:'+(tot.irr!=null&&tot.irr>0?'var(--green)':tot.irr!=null&&tot.irr<0?'var(--red)':'var(--text-dim)')+'">'+irrStr+'</div></div>'
+  +'</div>';
+
+  if(!data.peDeals.length){
+    html+='<div class="empty"><div class="empty-icon">💼</div><div class="empty-text">Aucun deal. Cliquez sur "+ Ajouter deal".</div></div>';
+    return html;
+  }
+
+  const STATUS_COLOR={active:'var(--green)',exited:'var(--text-dim)',default:'var(--red)'};
+  const STATUS_LABEL={active:'En cours',exited:'Sorti',default:'En défaut'};
+  data.peDeals.forEach(function(d){
+    var irr=calcIRR(dealIRRFlows(d));
+    var tvpi=dealTVPI(d);
+    var distrib=dealTotalDistributions(d);
+    var pl=(d.nav||0)+distrib-(d.calledCapital||0);
+    var remMonths=dealRemainingMonths(d);
+    var remStr=remMonths!=null?(remMonths>24?Math.round(remMonths/12)+'a':remMonths+'m'):'—';
+    html+='<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
+        +'<div><div style="font-size:14px;font-weight:500">'+d.name+'</div>'
+          +(d.fund?'<div style="font-size:11px;color:var(--text-dim);font-family:var(--fm)">'+d.fund+'</div>':'')
+          +'<div style="margin-top:4px"><span style="font-size:10px;font-family:var(--fm);padding:2px 7px;border-radius:4px;background:'+(STATUS_COLOR[d.status]||'var(--text-dim)')+'22;color:'+(STATUS_COLOR[d.status]||'var(--text-dim)')+'">'+( STATUS_LABEL[d.status]||'—')+'</span>'+(remMonths!=null?' <span style="font-size:10px;color:var(--text-dim);font-family:var(--fm)">'+remStr+'</span>':'')+'</div>'
+        +'</div>'
+        +'<div style="text-align:right"><div style="font-family:var(--fd);font-size:20px">'+fmt(d.nav||0)+'</div>'
+          +'<div style="font-size:11px;font-family:var(--fm);color:'+(pl>=0?'var(--green)':'var(--red)')+'">'+( pl>=0?'+':'')+fmt(pl)+'</div></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;font-size:11px;font-family:var(--fm);padding:10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:10px">'
+        +'<div><div style="color:var(--text-muted);margin-bottom:2px">Capital</div><div>'+fmt(d.calledCapital||0)+'</div></div>'
+        +'<div><div style="color:var(--text-muted);margin-bottom:2px">TVPI</div><div style="color:var(--gold)">'+(tvpi!=null?tvpi.toFixed(2)+'x':'—')+'</div></div>'
+        +'<div><div style="color:var(--text-muted);margin-bottom:2px">TRI</div><div style="color:'+(irr!=null&&irr>0?'var(--green)':'var(--text-dim)')+'">'+( irr!=null?(irr*100).toFixed(1)+'%':'—')+'</div></div>'
+        +'<div><div style="color:var(--text-muted);margin-bottom:2px">Distrib.</div><div style="color:var(--green)">'+fmt(distrib)+'</div></div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px">'
+        +'<button class="btn btn-outline btn-xs" style="flex:1" onclick="openAddPeFlow(\''+d.id+'\')">+ Flux</button>'
+        +'<button class="btn btn-outline btn-xs" style="flex:1" onclick="openEditPeDeal(\''+d.id+'\')">✎</button>'
+        +'<button class="action-btn del" onclick="deletePeDeal(\''+d.id+'\')">✕</button>'
+      +'</div>'
+    +'</div>';
   });
   return html;
 }
@@ -2339,7 +2722,7 @@ function addHistory(action,item){data.history.unshift({action,name:item.name,cat
 // EXPORT / IMPORT
 // ════════════════════════════════════════════════════
 function exportData(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='patrimoine_'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);notify('Export réussi ✓',true);}
-function importData(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const imp=JSON.parse(e.target.result);if(!imp.assets||!imp.dettes)throw new Error();data={assets:[],dettes:[],history:[],snapshots:[],dividendsReceived:[],...imp};save();renderAll();notify(`Import — ${data.assets.length} actifs`,true);refreshAllPrices();}catch{notify('Fichier invalide',false);}};reader.readAsText(file);event.target.value='';}
+function importData(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const imp=JSON.parse(e.target.result);if(!imp.assets||!imp.dettes)throw new Error();data={assets:[],dettes:[],history:[],snapshots:[],dividendsReceived:[],peDeals:[],...imp};save();renderAll();notify(`Import — ${data.assets.length} actifs`,true);refreshAllPrices();}catch{notify('Fichier invalide',false);}};reader.readAsText(file);event.target.value='';}
 function notify(msg,success){const el=document.getElementById('notif');el.textContent=msg;el.className='notif show'+(success?' success':'');setTimeout(()=>el.className='notif',4000);}
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});});
@@ -2353,7 +2736,7 @@ function isMobile(){return window.innerWidth<=768;}
 // ── MOBILE STATE ──────────────────────────────────────
 var mobActiveTab='dashboard';
 var marchesSubTab='bourse';
-var actifsSubTab='immo';
+var actifsSubTab='epargne';
 
 function initMobileNav(){
   // CSS media queries handle nav visibility — no JS needed
@@ -2570,7 +2953,7 @@ function mobShowTab(tab){
   mobActiveTab=tab;
   // Update nav buttons
   document.querySelectorAll('.mob-tab').forEach(function(t){t.classList.remove('active');});
-  var btnMap={dashboard:'dashboard',marches:'marches',actifs:'actifs',dettes:'dettes',historique:'plus'};
+  var btnMap={dashboard:'dashboard',marches:'marches',actifs:'actifs',pe:'pe',dettes:'plus',historique:'plus'};
   var btn=document.getElementById('mobt-'+(btnMap[tab]||'plus'));
   if(btn)btn.classList.add('active');
   // Hide all sections (desktop + mobile composite)
@@ -2579,6 +2962,7 @@ function mobShowTab(tab){
   var target;
   if(tab==='marches'||tab==='actifs') target=document.getElementById('section-'+tab);
   else if(tab==='dettes') target=document.getElementById('section-dettes');
+  else if(tab==='pe') target=document.getElementById('section-pe-mob');
   else if(tab==='historique') target=document.getElementById('section-historique');
   else target=document.getElementById('section-dashboard');
   if(target){target.style.display='block';target.classList.add('active');}
@@ -2599,6 +2983,12 @@ function mobShowTab(tab){
       else if(actifsSubTab==='epargne') el.innerHTML=mobBuildEpargne(comp.byCat.epargne||{value:0,invested:0,count:0},comp.totalBrut);
       else el.innerHTML=mobBuildAutre(comp.byCat.autre||{value:0,invested:0,count:0},comp.totalBrut);
     }
+  } else if(tab==='pe'){
+    var el=document.getElementById('mob-actifs-content');
+    // PE has its own mobile tab → render into mob-pe-content
+    renderAll();
+    var peEl=document.getElementById('mob-pe-content');
+    if(peEl)peEl.innerHTML=mobBuildPe();
   } else {
     renderAll();
   }
@@ -2614,6 +3004,7 @@ function closePlusSheet(){document.getElementById('plus-sheet-overlay').classLis
 // FAB: context aware
 function mobFabClick(){
   if(!isMobile()){openAddAsset();return;}
+  if(mobActiveTab==='pe'){openAddPeDeal();return;}
   if(mobActiveTab==='marches') openAddAsset(marchesSubTab);
   else if(mobActiveTab==='actifs') openAddAsset(actifsSubTab);
   else if(mobActiveTab==='dettes') openAddDette();
@@ -2771,8 +3162,8 @@ window.addEventListener('resize',function(){
   <div class="mob-tab" id="mobt-actifs" onclick="mobShowTab('actifs')">
     <span class="mob-tab-icon">🏦</span><span class="mob-tab-label">Actifs</span>
   </div>
-  <div class="mob-tab" id="mobt-dettes" onclick="mobShowTab('dettes')">
-    <span class="mob-tab-icon">⚠</span><span class="mob-tab-label">Dettes</span>
+  <div class="mob-tab" id="mobt-pe" onclick="mobShowTab('pe')">
+    <span class="mob-tab-icon">💼</span><span class="mob-tab-label">PE</span>
   </div>
   <div class="mob-tab" id="mobt-plus" onclick="openPlusSheet()">
     <span class="mob-tab-icon">⋯</span><span class="mob-tab-label">Plus</span>
@@ -2784,6 +3175,10 @@ window.addEventListener('resize',function(){
   <div class="plus-sheet" onclick="event.stopPropagation()">
     <div class="plus-sheet-handle"></div>
     <div class="plus-sheet-title">Plus</div>
+    <div class="plus-sheet-item" onclick="mobShowTab('dettes');closePlusSheet()">
+      <div class="plus-sheet-icon" style="background:rgba(224,85,85,.12)">⚠</div>
+      <div><div class="plus-sheet-name">Dettes</div><div class="plus-sheet-desc">Emprunts & crédits</div></div>
+    </div>
     <div class="plus-sheet-item" onclick="mobShowTab('historique');closePlusSheet()">
       <div class="plus-sheet-icon" style="background:rgba(122,125,138,.15)">⊡</div>
       <div><div class="plus-sheet-name">Historique</div><div class="plus-sheet-desc">Journal des opérations</div></div>
@@ -2797,7 +3192,7 @@ window.addEventListener('resize',function(){
       <div><div class="plus-sheet-name">Importer</div><div class="plus-sheet-desc">Charger un fichier JSON</div></div>
     </div>
     <input type="file" id="importFileMob" accept=".json" style="display:none" onchange="importData(event)">
-    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.15</div>
+    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.16</div>
   </div>
 </div>
 
