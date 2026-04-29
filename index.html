@@ -562,7 +562,7 @@ tr.clickable:hover td{background:rgba(255,255,255,.015);cursor:default}
       <button onclick="document.getElementById('importFileDash').click()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:var(--fb)" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">⬆ Import</button>
       <input type="file" id="importFileDash" accept=".json" style="display:none" onchange="importData(event)">
     </div>
-    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.17</div>
+    <div style="font-size:10px;color:var(--text-muted);font-family:var(--fm);letter-spacing:.06em">© 2026 r00tp &nbsp;·&nbsp; v1.18</div>
   </div>
   </div>
 
@@ -1031,20 +1031,65 @@ function toStooqT(ticker){var t=ticker.toLowerCase();if(t.slice(-3)==='.pa')retu
 function tickerCcy(ticker){var t=ticker.toLowerCase();if(t.slice(-3)==='.pa'||t.slice(-3)==='.de'||t.slice(-3)==='.mi'||t.slice(-3)==='.as')return'EUR';if(t.slice(-2)==='.l')return'GBP';if(t.slice(-3)==='.sw')return'CHF';return'USD';}
 async function fetchYahooPrice(ticker){
   const t=ticker.toUpperCase();
-  const yU1='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
+  // Direct Yahoo/Stooq are always blocked by CORS from hosted origins.
+  // Strategy: proxy-first, multiple independent proxies, run in parallel per source.
   const yU2='https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
+  const yU1='https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(ticker)+'?interval=1d&range=1d';
   const stU='https://stooq.com/q/l/?s='+encodeURIComponent(toStooqT(ticker))+'&f=sd2t2ohlcv&h&e=csv';
-  const ao='https://api.allorigins.win/get?url=';
-  function exC(j){const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;if(!m||m.regularMarketPrice==null)return null;return{price:m.regularMarketPrice,ccy:(m.currency||'USD').toUpperCase()};}
-  function exS(txt){const lines=(txt||'').trim().split('\n');if(lines.length<2)return null;const v=lines[1].split(',');const p=parseFloat(v[6]);if(!p||isNaN(p)||p<=0)return null;return{price:p,ccy:tickerCcy(ticker)};}
+  const ao1='https://api.allorigins.win/get?url=';
+  const ao2='https://api.allorigins.win/raw?url=';
+  const cp='https://corsproxy.io/?url=';
+  const ct='https://api.codetabs.com/v1/proxy?quest=';
+
+  function exC(j){
+    const m=j&&j.chart&&j.chart.result&&j.chart.result[0]&&j.chart.result[0].meta;
+    if(!m||m.regularMarketPrice==null)return null;
+    return{price:m.regularMarketPrice,ccy:(m.currency||'USD').toUpperCase()};
+  }
+  function exCraw(txt){
+    try{return exC(JSON.parse(txt));}catch(e){return null;}
+  }
+  function exS(txt){
+    const lines=(txt||'').trim().split('\n');
+    if(lines.length<2)return null;
+    const v=lines[1].split(',');const p=parseFloat(v[6]);
+    if(!p||isNaN(p)||p<=0)return null;
+    return{price:p,ccy:tickerCcy(ticker)};
+  }
+
+  // Proxy-wrapped attempts only — direct requests always fail from remote origin
   const attempts=[
+    // Yahoo via allorigins /get (JSON wrapper)
+    async function(){const r=await fetch(ao1+encodeURIComponent(yU2),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return exC(JSON.parse((await r.json()).contents));},
+    // Yahoo via allorigins /raw (plain JSON)
+    async function(){const r=await fetch(ao2+encodeURIComponent(yU1),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return exCraw(await r.text());},
+    // Yahoo via corsproxy.io
+    async function(){const r=await fetch(cp+encodeURIComponent(yU2),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return exC(await r.json());},
+    // Yahoo via codetabs proxy
+    async function(){const r=await fetch(ct+encodeURIComponent(yU2),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return exCraw(await r.text());},
+    // Stooq via allorigins /get
+    async function(){const r=await fetch(ao1+encodeURIComponent(stU),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return exS((await r.json()).contents);},
+    // Stooq via allorigins /raw
+    async function(){const r=await fetch(ao2+encodeURIComponent(stU),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return exS(await r.text());},
+    // Stooq via corsproxy.io
+    async function(){const r=await fetch(cp+encodeURIComponent(stU),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;return exS(await r.text());},
+    // Direct attempts last (work locally / when CORS is open)
     async function(){const r=await fetch(yU1,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw 0;return exC(await r.json());},
-    async function(){const r=await fetch(yU2,{signal:AbortSignal.timeout(5000)});if(!r.ok)throw 0;return exC(await r.json());},
-    async function(){const r=await fetch(ao+encodeURIComponent(yU2),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;const j=await r.json();return exC(JSON.parse(j.contents));},
-    async function(){const r=await fetch(stU,{signal:AbortSignal.timeout(8000)});if(!r.ok)throw 0;return exS(await r.text());},
-    async function(){const r=await fetch(ao+encodeURIComponent(stU),{signal:AbortSignal.timeout(12000)});if(!r.ok)throw 0;const j=await r.json();return exS(j.contents);},
+    async function(){const r=await fetch(stU,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw 0;return exS(await r.text());},
   ];
-  for(const fn of attempts){try{const res=await fn();if(res&&res.price>0){livePrices[t]=res.price;livePrices[t+'__ccy']=res.ccy;freshPrices.add(t);delete priceErrors[t];return;}}catch(e){}}
+
+  for(const fn of attempts){
+    try{
+      const res=await fn();
+      if(res&&res.price>0){
+        livePrices[t]=res.price;
+        livePrices[t+'__ccy']=res.ccy;
+        freshPrices.add(t);
+        delete priceErrors[t];
+        return;
+      }
+    }catch(e){}
+  }
   priceErrors[t]='sync_error';
 }
 
@@ -1171,7 +1216,9 @@ async function resolveIsin(isin){
   const url=`https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(isin)}&quotesCount=5&newsCount=0&enableFuzzyQuery=false`;
   const proxy=`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
   const proxy2=`https://corsproxy.io/?url=${encodeURIComponent(url)}`;
-  for(const src of [url,proxy,proxy2]){
+  const proxy3='https://corsproxy.io/?url='+encodeURIComponent(url);
+  const proxy4='https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url);
+  for(const src of [proxy,proxy2,proxy3,proxy4,url]){
     try{
       const r=await fetch(src,{signal:AbortSignal.timeout(8000)});
       if(!r.ok)throw 0;
@@ -1257,10 +1304,17 @@ async function fetchDividendHistory(ticker){
     return history.length?history:null;
   }
 
+  const ao1='https://api.allorigins.win/get?url=';
+  const ao2='https://api.allorigins.win/raw?url=';
+  const cp='https://corsproxy.io/?url=';
+  const ct='https://api.codetabs.com/v1/proxy?quest=';
   const attempts=[
+    async function(){const r=await fetch(ao1+encodeURIComponent(yUrl2),{signal:AbortSignal.timeout(14000)});if(!r.ok)throw 0;return parseDivs(JSON.parse((await r.json()).contents));},
+    async function(){const r=await fetch(ao2+encodeURIComponent(yUrl2),{signal:AbortSignal.timeout(14000)});if(!r.ok)throw 0;try{return parseDivs(JSON.parse(await r.text()));}catch(e){return null;}},
+    async function(){const r=await fetch(cp+encodeURIComponent(yUrl2),{signal:AbortSignal.timeout(14000)});if(!r.ok)throw 0;return parseDivs(await r.json());},
+    async function(){const r=await fetch(ct+encodeURIComponent(yUrl2),{signal:AbortSignal.timeout(14000)});if(!r.ok)throw 0;try{return parseDivs(JSON.parse(await r.text()));}catch(e){return null;}},
     async function(){const r=await fetch(yUrl,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw 0;return parseDivs(await r.json());},
     async function(){const r=await fetch(yUrl2,{signal:AbortSignal.timeout(6000)});if(!r.ok)throw 0;return parseDivs(await r.json());},
-    async function(){const r=await fetch(ao+encodeURIComponent(yUrl2),{signal:AbortSignal.timeout(14000)});if(!r.ok)throw 0;const j=await r.json();return parseDivs(JSON.parse(j.contents));},
   ];
 
   for(const fn of attempts){
@@ -2278,9 +2332,10 @@ function renderPe(){
 
   // KPIs
   const kpiEl=document.getElementById('pe-kpi');
+  var totalCommit=data.peDeals.reduce(function(s,d){return s+(d.commitment||0);},0);
   if(kpiEl) kpiEl.innerHTML=
     '<div class="kpi-card primary"><div class="kpi-label">NAV totale (VANT)</div><div class="kpi-value">'+fmt(tot.totalNAV)+'</div><div class="kpi-sub">'+deals.length+' deal'+(deals.length>1?'s':'')+'</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">Capital appelé</div><div class="kpi-value" style="font-size:24px;color:var(--text-dim)">'+fmt(tot.totalCalled)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Souscription totale</div><div class="kpi-value" style="font-size:22px;color:var(--text-dim)">'+fmt(totalCommit)+'</div><div class="kpi-sub">Appelé : '+fmt(tot.totalCalled)+'</div></div>'
     +'<div class="kpi-card"><div class="kpi-label">TVPI</div><div class="kpi-value" style="font-size:24px;color:var(--gold)">'+tvpiStr+'</div><div class="kpi-sub">DPI '+dpiStr+'</div></div>'
     +'<div class="kpi-card"><div class="kpi-label">TRI (IRR)</div><div class="kpi-value" style="font-size:24px;color:'+(tot.irr!=null&&tot.irr>0?'var(--green)':tot.irr!=null&&tot.irr<0?'var(--red)':'var(--text-dim)')+'">'+irrStr+'</div></div>'
     +'<div class="kpi-card"><div class="kpi-label">Distributions reçues</div><div class="kpi-value" style="font-size:24px;color:var(--green)">'+fmt(tot.totalDistrib)+'</div></div>';
@@ -2322,8 +2377,9 @@ function renderPe(){
       +'</div>'
       // Metrics grid
       +'<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:12px">'
-        +['Capital appelé','Non déployé','TVPI','DPI','TRI'].map(function(label,i){
-          const vals=[fmt(d.calledCapital||0),fmt(d.undeployedCapital||0),(tvpi!=null?tvpi.toFixed(2)+'x':'—'),(dpi!=null?dpi.toFixed(2)+'x':'—'),(irr!=null?(irr*100).toFixed(1)+'%':'—')];
+        var souscStr=d.commitment>0?fmt(d.commitment):'—';
+        +['Souscription','Appelé','TVPI','DPI','TRI'].map(function(label,i){
+          const vals=[souscStr,fmt(d.calledCapital||0),(tvpi!=null?tvpi.toFixed(2)+'x':'—'),(dpi!=null?dpi.toFixed(2)+'x':'—'),(irr!=null?(irr*100).toFixed(1)+'%':'—')];
           const colors=['','','var(--gold)','var(--text)','var(--green)'];
           return'<div style="text-align:center"><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);font-family:var(--fm);margin-bottom:4px">'+label+'</div>'
             +'<div style="font-family:var(--fm);font-size:13px;color:'+(colors[i]||'var(--text)')+'">'+vals[i]+'</div></div>';
@@ -2374,23 +2430,29 @@ function openEditPeDeal(id){
 }
 function _showPeDealModal(d){
   document.getElementById('modal-dette-title').textContent=editingPeDealId?'Modifier le deal':'Nouveau deal PE';
+  var hint='<span style="font-size:9px;color:var(--text-muted);font-family:var(--fm);font-weight:300;letter-spacing:.05em">';
   document.querySelector('#modal-dette .modal-body').innerHTML=
-    '<div class="fg"><label>Nom du deal</label><input type="text" id="pe-name" placeholder="Fonds Infrastructure III…" value="'+( d.name||'')+'"></div>'
-    +'<div class="fg"><label>Nom du fonds / plateforme</label><input type="text" id="pe-fund" placeholder="Fundora, Eurazeo…" value="'+( d.fund||'')+'"></div>'
+    '<div class="fg"><label>Nom du deal '+hint+'= Opportunité Fundora</span></label><input type="text" id="pe-name" placeholder="Cyber Intelligence Venture…" value="'+(d.name||'')+'"></div>'
+    +'<div class="fg"><label>Plateforme / Fonds '+hint+'= ex : Fundora</span></label><input type="text" id="pe-fund" placeholder="Fundora, Eurazeo…" value="'+(d.fund||'')+'"></div>'
     +'<div class="fr2">'
-      +'<div class="fg"><label>Date investissement</label><input type="date" id="pe-date" value="'+( d.date||new Date().toISOString().split("T")[0])+'"></div>'
-      +'<div class="fg"><label>Date cible de sortie</label><input type="date" id="pe-enddate" value="'+( d.targetEndDate||'')+'"></div>'
+      +'<div class="fg"><label>Date investissement '+hint+'= Date</span></label><input type="date" id="pe-date" value="'+(d.date||new Date().toISOString().split("T")[0])+'"></div>'
+      +'<div class="fg"><label>Date cible de sortie '+hint+'= Date + Durée du fonds</span></label><input type="date" id="pe-enddate" value="'+(d.targetEndDate||'')+'"><div class="hint">Ex : fonds 10 ans signé le 30/03/2026 → 30/03/2036</div></div>'
+    +'</div>'
+    +'<div class="fsec">Capitaux</div>'
+    +'<div class="fr2">'
+      +'<div class="fg"><label>Souscription totale (€) '+hint+'= Montant</span></label><input type="number" id="pe-commitment" placeholder="200" step="0.01" value="'+(d.commitment||'')+'"><div class="hint">Engagement total souscrit sur la durée du fonds.</div></div>'
+      +'<div class="fg"><label>Appels de fonds reçus (€) '+hint+'= Appel de fonds</span></label><input type="number" id="pe-called" placeholder="63.50" step="0.01" value="'+(d.calledCapital||'')+'"><div class="hint">Montant effectivement appelé et versé à ce jour.</div></div>'
     +'</div>'
     +'<div class="fr2">'
-      +'<div class="fg"><label>Capital appelé (€)</label><input type="number" id="pe-called" placeholder="10000" step="0.01" value="'+( d.calledCapital||'')+'"></div>'
-      +'<div class="fg"><label>Capital non déployé (€)</label><input type="number" id="pe-uncalled" placeholder="5000" step="0.01" value="'+( d.undeployedCapital||'')+'"></div>'
+      +'<div class="fg"><label>Capital non déployé (€) '+hint+'= Capital non déployé</span></label><input type="number" id="pe-uncalled" placeholder="63.50" step="0.01" value="'+(d.undeployedCapital||'')+'"><div class="hint">Capital appelé mais pas encore investi par le fonds.</div></div>'
+      +'<div class="fg"><label>NAV / Valorisation nette (€) '+hint+'= Valorisation nette</span></label><input type="number" id="pe-nav" placeholder="63.50" step="0.01" value="'+(d.nav||'')+'"><div class="hint">À l\'initialisation : égal au capital appelé. Mettre à jour manuellement.</div></div>'
     +'</div>'
+    +'<div class="fsec">Statut & objectif</div>'
     +'<div class="fr2">'
-      +'<div class="fg"><label>NAV actuelle / VANT (€)</label><input type="number" id="pe-nav" placeholder="12000" step="0.01" value="'+( d.nav||'')+'"></div>'
       +'<div class="fg"><label>Statut</label><select id="pe-status"><option value="active"'+(d.status==="active"?" selected":"")+'>En cours</option><option value="exited"'+(d.status==="exited"?" selected":"")+'>Sorti</option><option value="default"'+(d.status==="default"?" selected":"")+'>En défaut</option></select></div>'
+      +'<div class="fg"><label>Objectif de rendement '+hint+'= Objectif</span></label><input type="text" id="pe-target" placeholder="x5.5" value="'+(d.target||'')+'"></div>'
     +'</div>'
-    +'<div class="fg"><label>Objectif (ex : x2, x5.5, 15%…)</label><input type="text" id="pe-target" placeholder="x3" value="'+( d.target||'')+'"></div>'
-    +'<div class="fg"><label>Notes</label><input type="text" id="pe-notes" placeholder="…" value="'+( d.notes||'')+'"></div>';
+    +'<div class="fg"><label>Notes</label><input type="text" id="pe-notes" placeholder="Secteur, géographie, ticket min…" value="'+(d.notes||'')+'"></div>';
   document.querySelector('#modal-dette .modal-footer').innerHTML=
     '<button class="btn btn-outline" onclick="closeModal(\'dette\')">Annuler</button>'
     +'<button class="btn btn-gold" onclick="savePeDeal()">Enregistrer</button>';
@@ -2399,15 +2461,20 @@ function _showPeDealModal(d){
 function savePeDeal(){
   const name=document.getElementById('pe-name').value.trim();
   if(!name){notify('Veuillez saisir un nom',false);return;}
+  var calledVal=parseFloat(document.getElementById('pe-called').value)||0;
+  var navVal=parseFloat(document.getElementById('pe-nav').value)||0;
+  // If NAV left empty on new deal, default to called capital
+  if(!navVal&&calledVal&&!editingPeDealId) navVal=calledVal;
   const deal={
     id:editingPeDealId||Date.now().toString(),
     name,
     fund:document.getElementById('pe-fund').value.trim(),
     date:document.getElementById('pe-date').value,
     targetEndDate:document.getElementById('pe-enddate').value||null,
-    calledCapital:parseFloat(document.getElementById('pe-called').value)||0,
+    commitment:parseFloat(document.getElementById('pe-commitment').value)||0,
+    calledCapital:calledVal,
     undeployedCapital:parseFloat(document.getElementById('pe-uncalled').value)||0,
-    nav:parseFloat(document.getElementById('pe-nav').value)||0,
+    nav:navVal,
     status:document.getElementById('pe-status').value,
     target:document.getElementById('pe-target').value.trim(),
     notes:document.getElementById('pe-notes').value.trim(),
@@ -3220,7 +3287,7 @@ window.addEventListener('resize',function(){
       <div><div class="plus-sheet-name">Importer</div><div class="plus-sheet-desc">Charger un fichier JSON</div></div>
     </div>
     <input type="file" id="importFileMob" accept=".json" style="display:none" onchange="importData(event)">
-    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.17</div>
+    <div style="padding:14px 22px 4px;font-size:10px;color:var(--text-muted);font-family:var(--fm);text-align:center">© 2026 r00tp · v1.18</div>
   </div>
 </div>
 
